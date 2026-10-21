@@ -47,8 +47,12 @@ Build a model as a stack of Geometry Nodes pattern modifiers on a host object, d
 - **Blender 5 moved modifier inputs** from ID properties (`mod["Socket_2"]`) to `mod.properties.inputs.Socket_2.value`. Always go through `gn.set_input`/`get_input`, which handle both and coerce types (an int into a float socket otherwise errors).
 - **Fill Curve defaults to Triangles.** Extruding a triangulated fill creates internal walls (non-manifold). Use `Mode="N-gons"`.
 - **Merge By Distance at 1e-6 misses coincident points** at ~100s of units (float noise). Use 1e-4.
-- **Mesh Boolean's default solver in 5.x mangled a simple pocket cut.** Set `solver="EXACT"` explicitly.
+- **Mesh Boolean's default solver in 5.x mangled a simple pocket cut.** Set `solver="EXACT"` explicitly. `MANIFOLD` (5.x) is also clean and much faster when both operands are closed slabs. art-dealers-logo uses it for a tray pocket and for cutting about 650 traced letter points out of a box. Read the identifiers from `bl_rna` and fall back to `EXACT`.
+- **A shared subgroup rebuilt with `gn.tree(..., reset=True)` from a second builder** empties its interface, which unlinks the group nodes the first builder already wired; that tree then outputs nothing. Build shared subgroups once per source: `if gn.current(t, __file__): return t`, and `gn.stamp(t, __file__)` at the end (`models/art-dealers-logo/builders/logo_geo.py`).
+- **`gn.input` socket kinds are `kit.gn.SOCKET_TYPES` keys**: booleans are `"BOOL"`, not `"BOOLEAN"`.
+- **Offset an outline by a margin** (there is no curve-offset node). For a convex result, the Minkowski sum with a circle works: Convex Hull → Instance on Points (Curve Circle, radius = margin) → Realize → Convex Hull. A planar hull comes out as one flat face that Extrude Mesh accepts. For a small inset or outset of any closed curve, Set Position with offset `normalize(tangent × ±Z) × d` works, provided every loop winds the same way relative to its filled side (traced contours do; see `image-logo-relief.md`).
 - **Object Info in RELATIVE space** pins the result to the curve's world position. Moved hosts (variant copies) then lose their cuts. Patterns read curves in ORIGINAL space: edit the curve's points to reshape, and move the host to place.
 - **Input names are params keys.** Keep them unique across patterns (hence the `Pocket` prefix), or scope a key to one object: `"Frame/Height"`.
 
 ## Models
+- art-dealers-logo (2026-10-21): traced logo curves → Fill Curve slabs, a box-minus-letters cut and an open tray (outer slab minus pocket), all GN on two hosts. Added the gotchas on the Manifold solver, shared subgroup resets and outline offsets.
