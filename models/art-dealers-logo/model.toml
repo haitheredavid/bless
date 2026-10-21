@@ -1,0 +1,93 @@
+name = "art-dealers-logo"
+created = "2026-10-21"
+intent = "150 mm two-colour desk block of the Art Dealers Galeria logo, printed as one part on the P1S: an open black tray (3 mm floor, 4 mm rim, 15 mm tall) with the white logo standing inside up to the rim top; the 'Dealers' letters are knocked out through the white box to the black floor."
+status = "active"             # active | done (`blend model done` sets it)
+workflows = ["mcp-modeling-loop", "gn-patterns", "image-logo-relief", "variant-grid-exploration", "print-handoff", "render-views-and-sections"]
+tags = ["3d-print", "logo", "sign", "two-colour", "parametric"]
+
+[units]                       # applied by `blend model new`; 1 Blender unit = 1 m by default
+scale_length = 0.001            # 0.001 + length_unit = "MILLIMETERS" for mm-scale work
+length_unit = "MILLIMETERS"
+
+[export]                      # `blend export`
+formats = ["stl", "glb"]      # stl for the slicer; glb for viewing
+split = true                  # Logo_Base and Logo_Face as separate bodies (one per colour)
+
+[render]                      # `blend render` studio still -> render.png
+# framing = "fit"             # fit: fill the frame; wide: show the floor around it
+# scene = "Scene"             # scene to render (default: the saved one)
+
+# `blend views` shots. Tray lies flat on z=0, logo reads along +X.
+[[views]]
+name = "front"                # top-down, compare against refs/art-dealers-logo/logo.png
+azimuth = -90
+elevation = 89
+
+[[views]]
+name = "hero"                 # 3/4, shows the tray depth and the Dealers knockout
+azimuth = -60
+elevation = 35
+
+[print]                       # `blend print-pack` -> print/ handoff for a printing agent
+collection = "Model"          # one assembled part; two bodies = two colours
+bed = 256                     # mm, square (Bambu Lab P1S)
+printer = "Bambu Lab P1S"
+material = "PLA"
+orientation = "as modelled, flat on the floor underside. Needs AMS: the black rim rises past the white start height (z = Base Thickness), so a single filament swap at a layer does not work"
+# hardware = []
+# assembly = []
+# feedback_applied = []      # results.json recommendation ids taken (`blend print-results`)
+# feedback_declined = []     # ...or turned down; re-pack after editing
+
+[[print.part]]
+match = "*"
+supports = "none"
+supports_why = "flat plaque, raised features straight-walled from the base top; no overhangs"
+
+[[print.part]]
+match = "Logo_Base"
+filament = 1
+
+[[print.part]]
+match = "Logo_Face"
+filament = 2
+colour = "ams"
+into = "Logo_Base"
+
+[[print.filament]]
+id = 1
+role = "base"
+material = "pla"
+color = "#111111"
+profile_hint = "pla_basic"
+
+[[print.filament]]
+id = 2
+role = "face"
+material = "pla"
+color = "#EEEEEE"
+profile_hint = "pla_basic"
+
+# [[print.coupon]]            # fit test; lives in the pack that prints it
+# id = "tenon"
+# param = "builders/joinery.py:TENON_CLEAR"
+# values = [0.10, 0.15, 0.20]
+# parts = { "0.10" = ["Coupon_C10_*"], "0.15" = ["Coupon_C15_*"], "0.20" = ["Coupon_C20_*"] }
+# rule = "tightest that slides in by hand"
+
+# [print.Coupon]              # `blend print-pack <m> --collection Coupon` -> print/coupon/
+# orientation = ""            # replaces orientation/flat/hardware/assembly/intent/feedback_*;
+                              # [[print.Coupon.part]] etc. replace the inherited arrays
+
+# [site]                      # Pages viewer; `blend export <m> --web` publishes the model
+# parts = "Print"             # collection shown as "print parts" (default [print] collection; "" for none)
+# upright = true              # stand it up as hung (default: the hero view's upright)
+# speckle = false             # link the Speckle project (only once it's public)
+
+[speckle]                     # /checkpoint publishes here; see .context/speckle-guide.md
+account = "haitheredavid@gmail.com"   # chosen by email, never the connector's default
+project_id = "de2b7457ae"     # app.speckle.systems project "blender-sessions"
+
+[turntable]                   # `blend turntable` -> out/<session>-turntable.mp4 + .gif
+frames = 120
+fps = 30

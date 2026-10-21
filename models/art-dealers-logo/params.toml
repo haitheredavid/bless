@@ -1,0 +1,31 @@
+# GN inputs for this model. kit.params pushes [base] (merged with a variant's overrides)
+# into the matching modifier inputs by socket name. Keys are the GN input names. Units: mm.
+# Open tray: black floor + rim (Logo_Base), white logo standing inside up to the rim top (Logo_Face).
+
+[base]
+"Logo Width" = 150.0          # traced logo scaled to this width
+"Base Thickness" = 3.0        # tray floor (black); white starts at this z
+"Face Depth" = 12.0           # interior depth: rim and white logo height above the floor (total 15)
+"Galeria Bold" = 0.2          # grow GALERIA strokes per side (traced ~0.84 mm -> ~1.24 mm)
+"Base Margin" = 8.0           # plate border around the logo, rim included
+"Rim Width" = 4.0             # tray wall; leaves Base Margin - Rim Width between wall and logo
+"Base Shape" = 0              # 0 rectangle, 1 rounded rectangle, 2 logo silhouette offset by margin
+"Corner Radius" = 4.0         # outer corner radius for shape 1 (pocket corners shrink by the rim)
+"Dealers Knockout" = true     # true: Dealers letters cut through the box to the floor; false: recessed
+"Dealers Recess" = 1.2        # recess depth when Dealers Knockout is false
+
+[variants.shallow]
+"Face Depth" = 7.0
+
+[variants.thin-rim]
+"Rim Width" = 2.0
+
+[variants.rounded]
+"Base Shape" = 1
+"Corner Radius" = 6.0
+
+[variants.silhouette]
+"Base Shape" = 2
+
+[variants.recess]
+"Dealers Knockout" = false

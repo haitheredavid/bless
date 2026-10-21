@@ -66,6 +66,7 @@ Every `just render` drops a fresh tile here. Click one for its brief; hover for 
 
 <!-- gallery:start -->
 <p align="center">
+<a href="models/art-dealers-logo/brief.md"><img src="docs/gallery/art-dealers-logo.png" width="24%" alt="art-dealers-logo" title="150 mm two-colour desk block of the Art Dealers Galeria logo, printed as one part on the P1S: an open black tray (3 mm floor, 4 mm rim, 15 mm tall) with the white logo standing inside up to the rim top; the &#x27;Dealers&#x27; letters are knocked out through the white box to the black floor."></a>
 <a href="models/witch-frame/brief.md"><img src="docs/gallery/witch-frame.png" width="24%" alt="witch-frame" title="3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with turn clips for a 10x13in backboard."></a>
 </p>
 <!-- gallery:end -->
