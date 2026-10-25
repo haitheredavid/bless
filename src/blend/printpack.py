@@ -31,8 +31,9 @@ JOINT_KINDS = (
     "glue-face",
     "snap",
 )
-# [[print.part]] keys print_pack.py (Blender) needs to place a part
-GEOMETRY_KEYS = ("match", "flat", "rotate")
+# [[print.part]] keys print_pack.py (Blender) needs to place a part ("into": AMS inlays and
+# glue-in pieces stay where they were modelled relative to their host)
+GEOMETRY_KEYS = ("match", "flat", "rotate", "into")
 
 
 def _globs(match) -> list[str]:
@@ -88,7 +89,7 @@ def resolve_rules(name: str, rules: list[dict]) -> dict:
 
 
 def geometry_rules(cfg: dict) -> list[dict]:
-    """The [[print.part]] keys print_pack.py applies in Blender (match, flat, rotate)."""
+    """The [[print.part]] keys print_pack.py applies in Blender (match, flat, rotate, into)."""
     out = []
     for rule in cfg.get("part", []):
         r = {k: rule[k] for k in GEOMETRY_KEYS if k in rule}

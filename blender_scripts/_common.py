@@ -26,6 +26,27 @@ def write_result(path: str, data: dict) -> None:
     Path(path).write_text(json.dumps(data, indent=2))
 
 
+def reveal(name: str, scene: bpy.types.Scene | None = None) -> None:
+    """Show collection `name` (and its children) in the first view layer, so a packing or
+    export step sees parts the file keeps hidden (e.g. a Print collection that follows a
+    display object through drivers). Headless scripts never save the file."""
+    scene = scene or bpy.context.scene
+    coll = bpy.data.collections.get(name)
+    if coll is None:
+        return
+    targets = {coll, *coll.children_recursive}
+    for c in targets:
+        c.hide_viewport = False
+
+    def walk(lc) -> None:
+        if lc.collection in targets:
+            lc.exclude = lc.hide_viewport = False
+        for child in lc.children:
+            walk(child)
+
+    walk(scene.view_layers[0].layer_collection)
+
+
 def model_objects(
     scene: bpy.types.Scene | None = None, types=("MESH",), collection: str = ""
 ) -> list:

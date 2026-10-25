@@ -86,6 +86,7 @@ def test_blender_args_pass_geometry_rules_only():
     rules = json.loads(args[args.index("--rules") + 1])
     assert rules == [
         {"match": "Clip_*", "rotate": [90, 0, 0]},
+        {"match": ["Eye_L", "Eye_R"], "into": "Piece_TR"},
         {"match": "Tenon_*", "flat": True},
     ]
     assert "--rules" not in printpack.blender_args({"collection": "P", "bed": 1})

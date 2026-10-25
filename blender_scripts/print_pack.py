@@ -9,11 +9,13 @@ For a printing agent (e.g. bambi), which exports every visible mesh of a mm .ble
   a plain mesh with its world transform baked in, keeping materials;
 - each part is dropped onto the bed (lowest point at z=0) in its modelled orientation,
   unless its name matches a --flat pattern: then its largest flat face goes down;
-  --rules ([[print.part]] match/flat/rotate, later rules win key by key) can set flat
+  --rules ([[print.part]] match/flat/rotate/into, later rules win key by key) can set flat
   per part or rotate it (Euler XYZ degrees) before it is dropped; flat beats rotate;
+- a part with `into` (an AMS inlay or glue-in piece) is not placed on its own: it takes its
+  host's rotation and move, so it stays where it was modelled inside the host;
 - each part's "joints" / "fit" custom properties (JSON string or ID property) are
   passed through to the result for the manifest;
-- parts are laid out in non-overlapping rows (gap mm apart) so nothing collides;
+- hosts and free parts are laid out in non-overlapping rows (gap mm apart) so nothing collides;
 - parts.blend contains only those parts, in mm (1 BU = 1 mm), saved as a new file;
 - each part is also written as <name>.stl in Blender units (mm).
 The source .blend is never saved. The result JSON lists each part's size, volume and
@@ -32,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import bmesh
 import bpy
-from _common import model_objects, parse, write_result
+from _common import MODEL, model_objects, parse, reveal, write_result
 from mathutils import Euler, Matrix, Vector
 
 parser = argparse.ArgumentParser()
@@ -41,26 +43,30 @@ parser.add_argument("--collection", default="Print")
 parser.add_argument("--gap", type=float, default=5.0)
 parser.add_argument("--bed", type=float, default=256.0)
 parser.add_argument("--flat", action="append", default=[], help="part name glob")
-parser.add_argument("--rules", default="[]", help="JSON [{match, flat?, rotate?}]")
+parser.add_argument(
+    "--rules", default="[]", help="JSON [{match, flat?, rotate?, into?}]"
+)
 opts = parse(parser)
 rules = json.loads(opts.rules)
 
 scene = bpy.context.scene
 per_bu = scene.unit_settings.scale_length or 1.0
 mm = 0.001 / per_bu  # Blender units per mm in the source file
+if opts.collection != MODEL:
+    reveal(opts.collection)  # e.g. a Print collection hidden in the file
 dg = bpy.context.evaluated_depsgraph_get()
 sources = model_objects(collection=opts.collection)
 if not sources:
     raise SystemExit(f"no visible meshes in collection {opts.collection!r}")
 
 
-def lay_flat(me) -> None:
-    """Rotate me so its largest planar face (summed area per normal) faces the bed."""
+def flat_matrix(me) -> Matrix:
+    """Rotation that turns me's largest planar face (summed area per normal) to face the bed."""
     area = defaultdict(float)
     for poly in me.polygons:
         area[tuple(round(c, 3) for c in poly.normal)] += poly.area
     down = Vector(max(area, key=area.get)).normalized()
-    me.transform(down.rotation_difference(Vector((0, 0, -1))).to_matrix().to_4x4())
+    return down.rotation_difference(Vector((0, 0, -1))).to_matrix().to_4x4()
 
 
 def matches(name: str, match) -> bool:
@@ -68,15 +74,15 @@ def matches(name: str, match) -> bool:
     return any(fnmatch(name, g) for g in globs)
 
 
-def placement(name: str) -> tuple[bool, list[float]]:
-    """(lay flat?, rotate degrees) for a part: --flat globs, then rules, later wins."""
+def placement(name: str) -> tuple[bool, list[float], str]:
+    """(lay flat?, rotate degrees, host) for a part: --flat globs, then rules, later wins."""
     merged = {}
     for rule in rules:
         if matches(name, rule["match"]):
             merged.update(rule)
     flat = merged.get("flat", any(fnmatch(name, pat) for pat in opts.flat))
     rotate = [float(a) for a in merged.get("rotate", (0, 0, 0))]
-    return bool(flat), ([0.0, 0.0, 0.0] if flat else rotate)
+    return bool(flat), ([0.0, 0.0, 0.0] if flat else rotate), merged.get("into", "")
 
 
 def plain(value):
@@ -101,23 +107,38 @@ baked = []
 flat = set()
 rotated = {}
 extras = {}
+hosts = {}  # inlay name -> host name
+orient = {}  # part name -> rotation applied before dropping on the bed
 for src in sources:
     me = bpy.data.meshes.new_from_object(src.evaluated_get(dg), depsgraph=dg)
     me.transform(src.matrix_world)
     if mm != 1.0:  # normalise to 1 BU = 1 mm
         me.transform(Matrix.Scale(1.0 / mm, 4))
-    lay, rotate = placement(src.name)
-    if lay:
-        lay_flat(me)
+    lay, rotate, host = placement(src.name)
+    if host:
+        hosts[src.name] = host
+    elif lay:
+        orient[src.name] = flat_matrix(me)
         flat.add(src.name)
-    elif any(rotate):
-        me.transform(
+    else:
+        orient[src.name] = (
             Euler([math.radians(a) for a in rotate], "XYZ").to_matrix().to_4x4()
         )
     rotated[src.name] = rotate
     extras[src.name] = {k: plain(src[k]) for k in ("joints", "fit") if k in src}
     me.name = src.name
     baked.append((src.name, me))
+
+for name, host in hosts.items():
+    if host in hosts or host not in orient:
+        why = "an inlay itself" if host in hosts else "not in the collection"
+        raise SystemExit(f"{name}: into {host!r} is {why}")
+    if host in flat:
+        flat.add(name)
+    rotated[name] = rotated[host]
+    orient[name] = orient[host]
+for name, me in baked:
+    me.transform(orient[name])
 
 # drop the source scene's objects; only the baked parts go in the pack
 for obj in list(bpy.data.objects):
@@ -130,21 +151,37 @@ scene.unit_settings.length_unit = "MILLIMETERS"
 parts_coll = bpy.data.collections.new("Parts")
 scene.collection.children.link(parts_coll)
 
-# shelf layout: largest footprints first, rows along +X, wrapping at a wide row length
-items = []
+
+def bounds(meshes) -> tuple[Vector, Vector]:
+    co = [v.co for me in meshes for v in me.vertices]
+    xs, ys, zs = zip(*co)
+    return Vector((min(xs), min(ys), min(zs))), Vector((max(xs), max(ys), max(zs)))
+
+
+# shelf layout of groups (a host with its inlays, or a free part): largest footprints first,
+# rows along +X, wrapping at a wide row length; one move per group keeps inlays in place
+groups = {name: [me] for name, me in baked if name not in hosts}
 for name, me in baked:
-    xs, ys, zs = zip(*(v.co[:] for v in me.vertices))
-    lo, hi = Vector((min(xs), min(ys), min(zs))), Vector((max(xs), max(ys), max(zs)))
-    items.append((name, me, lo, hi))
+    if name in hosts:
+        groups[hosts[name]].append(me)
+items = [(name, meshes, *bounds(meshes)) for name, meshes in groups.items()]
 items.sort(key=lambda it: -(it[3].x - it[2].x) * (it[3].y - it[2].y))
 row_len = max(opts.bed * 2, max(it[3].x - it[2].x for it in items))
 x = y = row_h = 0.0
-parts = []
-for name, me, lo, hi in items:
-    w, d, h = hi - lo
+for _, meshes, lo, hi in items:
+    w, d, _ = hi - lo
     if x and x + w > row_len:
         x, y, row_h = 0.0, y + row_h + opts.gap, 0.0
-    me.transform(Matrix.Translation(Vector((x, y, 0)) - lo))  # min corner -> (x, y, 0)
+    move = Matrix.Translation(Vector((x, y, 0)) - lo)  # group min corner -> (x, y, 0)
+    for me in meshes:
+        me.transform(move)
+    x += w + opts.gap
+    row_h = max(row_h, d)
+
+parts = []
+for name, me in baked:
+    lo, hi = bounds([me])
+    w, d, h = hi - lo
     obj = bpy.data.objects.new(name, me)
     parts_coll.objects.link(obj)
     bm = bmesh.new()
@@ -164,8 +201,6 @@ for name, me, lo, hi in items:
             **extras[name],
         }
     )
-    x += w + opts.gap
-    row_h = max(row_h, d)
 
 out = Path(opts.outdir).resolve()
 stl_dir = out / "stl"
