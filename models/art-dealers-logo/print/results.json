@@ -1,0 +1,181 @@
+{
+  "schema": "print-results/1",
+  "model": "art-dealers-logo",
+  "pack": "print",
+  "runs": [
+    {
+      "id": "che-20261021-01",
+      "kind": "check",
+      "at": "2026-10-21T18:21:49-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "b3e7c3bfbf2163c4"
+    },
+    {
+      "id": "che-20261021-02",
+      "kind": "check",
+      "at": "2026-10-21T18:21:55-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "b3e7c3bfbf2163c4"
+    },
+    {
+      "id": "che-20261021-03",
+      "kind": "check",
+      "at": "2026-10-21T18:23:21-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "sli-20261021-01",
+      "kind": "slice",
+      "at": "2026-10-21T18:23:23-04:00",
+      "file": "out/art-dealers-logo.gcode.3mf",
+      "machine": "p1s_0.4",
+      "process": "0.20mm_standard",
+      "filaments": [
+        "pla_basic",
+        "pla_basic"
+      ],
+      "plate": "Textured PEI Plate",
+      "overrides": {
+        "enable_support": 0
+      },
+      "seconds": 12869,
+      "grams": 82.6,
+      "grams_per_filament": [
+        41.2,
+        41.4
+      ],
+      "filament_changes": 60,
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "che-20261021-04",
+      "kind": "check",
+      "at": "2026-10-21T18:37:29-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "sli-20261021-02",
+      "kind": "slice",
+      "at": "2026-10-21T18:37:33-04:00",
+      "file": "out/art-dealers-logo.gcode.3mf",
+      "machine": "p1s_0.4",
+      "process": "0.20mm_standard",
+      "filaments": [
+        "pla_basic"
+      ],
+      "plate": "Textured PEI Plate",
+      "overrides": {
+        "enable_support": 0
+      },
+      "seconds": 6156,
+      "grams": 54.9,
+      "grams_per_filament": [
+        54.9
+      ],
+      "filament_changes": 0,
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "che-20261021-05",
+      "kind": "check",
+      "at": "2026-10-21T18:38:12-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "che-20261021-06",
+      "kind": "check",
+      "at": "2026-10-21T18:39:07-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "sli-20261021-03",
+      "kind": "slice",
+      "at": "2026-10-21T18:39:09-04:00",
+      "file": "out/art-dealers-logo.gcode.3mf",
+      "machine": "p1s_0.4",
+      "process": "0.20mm_standard",
+      "filaments": [
+        "bambu_pla_matte"
+      ],
+      "plate": "Textured PEI Plate",
+      "overrides": {
+        "enable_support": 0
+      },
+      "seconds": 6090,
+      "grams": 55.6,
+      "grams_per_filament": [
+        55.6
+      ],
+      "filament_changes": 0,
+      "spec_hash": "6289b11719c2389b"
+    },
+    {
+      "id": "che-20261021-07",
+      "kind": "check",
+      "at": "2026-10-21T19:25:51-04:00",
+      "severity": "ok",
+      "summary": {
+        "ok": 2,
+        "warn": 0,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "6289b11719c2389b"
+    }
+  ],
+  "recommendations": []
+}

@@ -66,9 +66,18 @@ def logo_scale(t, gin):
     return v
 
 
+def _material(name: str, color: str, roughness: float):
+    """Created once with the default colour; after that the colour is the user's (rebuilds keep it)."""
+    import bpy
+
+    return bpy.data.materials.get(name) or materials.principled(
+        name, color, roughness=roughness
+    )
+
+
 def base_material():
-    return materials.principled("Base", BASE_COLOR, roughness=0.6)
+    return _material("Box Colour", BASE_COLOR, 0.6)
 
 
 def face_material():
-    return materials.principled("Face", FACE_COLOR, roughness=0.5)
+    return _material("Letters Colour", FACE_COLOR, 0.5)

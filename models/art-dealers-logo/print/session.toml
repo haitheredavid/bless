@@ -1,0 +1,44 @@
+name = "art-dealers-logo"
+created = "2026-10-21"
+intent = "150 mm two-colour desk block of the Art Dealers Galeria logo, printed as one part on the P1S: an open black tray (3 mm floor, 4 mm rim, 15 mm tall) with the white logo standing inside up to the rim top; the 'Dealers' letters are knocked out through the white box to the black floor."
+
+[paths]                       # a print pack: the files below belong to the modelling repo
+kind = "pack"
+blend = "parts.blend"
+exports = "stl"
+out = "out"                   # bambi's: sliced files (gitignore it upstream)
+
+[source]                      # what `bambi init` read; `bambi status` compares the live spec
+repo = "blender-sessions"
+model = "art-dealers-logo"
+pack = "print"
+spec_created = "2026-10-21T19:25:50-04:00"
+spec_hash = "6289b11719c2389b"
+
+[slice]
+machine = "p1s_0.4"           # profiles/machine/<name>.json
+process = "0.20mm_standard"
+filament = "pla_basic"
+plate = "Textured PEI Plate"  # or Cool Plate, Engineering Plate, High Temp Plate, Supertack Plate
+orient = false                # packs arrive in print orientation; Bambu's auto-orient fights it
+arrange = true
+assemble = true              # colour parts sit inside others
+
+[slice.overrides]             # supports = 'none' from the spec
+enable_support = 0
+
+[print]
+ams_slot = 0                  # AMS tray (0-15), or -1 for external spool
+
+[[filaments]]                 # filament 1: pla
+profile = "pla_basic"
+color = "#111111"
+ams_slot = 0
+
+[[filaments]]                 # filament 2: pla
+profile = "pla_basic"
+color = "#EEEEEE"
+ams_slot = 1
+
+[objects]
+Logo_Face = 2

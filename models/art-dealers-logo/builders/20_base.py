@@ -6,7 +6,7 @@
 from pathlib import Path
 
 import bpy
-from kit import gn, materials
+from kit import gn, materials, scene
 
 GEO = Path(__file__).with_name("logo_geo.py")
 ns: dict = {"__file__": str(GEO)}
@@ -257,6 +257,8 @@ with gn.stage(t, "3 Pocket"):
 
 gn.arrange(t)
 
-obj = gn.host("Logo_Base")
+obj = gn.host(
+    "Logo_Base", scene.parts()
+)  # print body; 40_logo.py drives its inputs from Logo
 materials.assign(obj, ns["base_material"]())
 gn.modifier(obj, t, Art="CTL_Art", Galeria="CTL_Galeria", Dealers_Box="CTL_DealersBox")

@@ -11,7 +11,7 @@ length_unit = "MILLIMETERS"
 
 [export]                      # `blend export`
 formats = ["stl", "glb"]      # stl for the slicer; glb for viewing
-split = true                  # Logo_Base and Logo_Face as separate bodies (one per colour)
+split = true                  # one file per Model object: Logo (tray + letters, both colours)
 
 [render]                      # `blend render` studio still -> render.png
 # framing = "fit"             # fit: fill the frame; wide: show the floor around it
@@ -28,8 +28,20 @@ name = "hero"                 # 3/4, shows the tray depth and the Dealers knocko
 azimuth = -60
 elevation = 35
 
+[[views]]
+name = "low"                  # eye level, along the front edge: reads the depth of the box
+azimuth = -80
+elevation = 12
+
+[[views]]
+name = "detail"               # close on "Dealers": the knockout down to the floor
+azimuth = -70
+elevation = 40
+zoom = 1.6
+target = [25, 5, 12]
+
 [print]                       # `blend print-pack` -> print/ handoff for a printing agent
-collection = "Model"          # one assembled part; two bodies = two colours
+collection = "Print"          # Logo_Base + Logo_Face, driven from Logo's panel; two bodies = two colours
 bed = 256                     # mm, square (Bambu Lab P1S)
 printer = "Bambu Lab P1S"
 material = "PLA"

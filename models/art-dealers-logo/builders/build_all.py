@@ -23,6 +23,9 @@ scene.control()  # make sure Control and Notes exist before builders look for th
 scene.notes()
 scene.clear(scene.model())
 scene.clear(scene.work())  # cutters/helpers are rebuilt by the builders too
+scene.clear(
+    scene.parts()
+)  # print bodies (Logo_Base, Logo_Face) are rebuilt and re-driven
 for step in sorted(HERE.glob("[0-9][0-9]_*.py")):
     exec(step.read_text(), {"__name__": step.stem, "__file__": str(step)})  # noqa: S102
     print(f"build_all: {step.name}")

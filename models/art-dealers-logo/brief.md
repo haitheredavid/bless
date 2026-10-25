@@ -33,7 +33,9 @@ Shared helpers (the slab group, logo scale, materials) are in `builders/logo_geo
 
 **Variants:** `shallow`, `thin-rim`, `rounded`, `silhouette`, `recess` (see `params.toml`).
 
-**Checks:** both bodies watertight, envelope within 256 mm, and minimum feature size of at least 0.8 mm. Views: `front` (top-down, compared with the reference) and `hero` (¾).
+**Checks:** both bodies watertight, envelope within 256 mm, and minimum feature size of at least 0.8 mm. Views: `front` (top-down, compared with the reference), `hero` (¾), `low` and `detail`.
+
+**Playing with it:** the Model collection holds one object, `Logo`, built by `40_logo.py` (`GN_ArtDealers_Logo`). All settings are on its modifier, in the Size, Box and Lettering panels. The print bodies `Logo_Base` and `Logo_Face` live in the hidden Print collection and are driven from Logo, so they always match it. The colours are the "Box Colour" and "Letters Colour" materials. The Stage collection (`50_stage.py`) holds the backdrop, lights and `Cam_<view>` cameras: select a camera, press Ctrl+Numpad0 to look through it, and F12 to render.
 
 **First session:** trace the Control curves and check them against the reference, build the base and face, then show a variant grid of the four variants.
 

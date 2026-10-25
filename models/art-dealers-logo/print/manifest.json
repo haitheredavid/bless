@@ -1,0 +1,104 @@
+{
+  "schema": "print-spec/1",
+  "model": "art-dealers-logo",
+  "pack": "print",
+  "intent": "150 mm two-colour desk block of the Art Dealers Galeria logo, printed as one part on the P1S: an open black tray (3 mm floor, 4 mm rim, 15 mm tall) with the white logo standing inside up to the rim top; the 'Dealers' letters are knocked out through the white box to the black floor.",
+  "created": "2026-10-25T18:23:40-04:00",
+  "source": {
+    "repo": "blender-sessions",
+    "commit": "15cae1a",
+    "blend": "models/art-dealers-logo/model.blend"
+  },
+  "units": "mm",
+  "blend": "models/art-dealers-logo/print/parts.blend",
+  "stl_dir": "models/art-dealers-logo/print/stl",
+  "printer": "Bambu Lab P1S",
+  "bed_mm": 256.0,
+  "material": "PLA",
+  "orientation": "as modelled, flat on the floor underside. Needs AMS: the black rim rises past the white start height (z = Base Thickness), so a single filament swap at a layer does not work",
+  "hardware": [],
+  "assembly": [],
+  "parts": [
+    {
+      "name": "Logo_Base",
+      "size": [
+        168.0,
+        53.9,
+        15.0
+      ],
+      "volume_cm3": 47.7,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Logo_Base.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "supports": {
+        "policy": "none",
+        "why": "flat plaque, raised features straight-walled from the base top; no overhangs"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Logo_Face",
+      "size": [
+        150.0,
+        36.1,
+        12.0
+      ],
+      "volume_cm3": 28.9,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Logo_Face.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "supports": {
+        "policy": "none",
+        "why": "flat plaque, raised features straight-walled from the base top; no overhangs"
+      },
+      "filament": 2,
+      "colour": {
+        "method": "ams",
+        "into": "Logo_Base"
+      }
+    }
+  ],
+  "plates_suggested": [
+    [
+      "Logo_Base",
+      "Logo_Face"
+    ]
+  ],
+  "total_volume_cm3": 76.6,
+  "feedback_applied": [],
+  "feedback_declined": [],
+  "filaments": [
+    {
+      "id": 1,
+      "role": "base",
+      "material": "pla",
+      "color": "#111111",
+      "profile_hint": "pla_basic"
+    },
+    {
+      "id": 2,
+      "role": "face",
+      "material": "pla",
+      "color": "#EEEEEE",
+      "profile_hint": "pla_basic"
+    }
+  ]
+}
