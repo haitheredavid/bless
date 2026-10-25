@@ -14,6 +14,7 @@ So, here's what this fucking thing does right now:
 - **Short sessions, long models.** Each model lives in `models/<name>/` and gets worked on over a bunch of short sittings. Every step is logged, so future me can figure out what the fuck past me was thinking.
 - **Checkpoints.** Versions get published to [Speckle](https://speckle.systems), so there's a history that isn't just `model_final_FINAL_v3.blend`.
 - **Lessons learned.** When a technique works, it gets written up in [`workflows/`](workflows/) so neither of us has to rediscover it next week.
+- **Hand it to someone else.** A model can boil down to one panel of plain settings (size, box depth, letter weight) and a lit stage with cameras built into the `.blend`, so someone who's never opened Blender can drag sliders and hit F12. The printable parts quietly follow along. [`art-dealers-logo`](models/art-dealers-logo/brief.md) did this for my in-laws' gallery logo.
 
 Agent context lives in [`AGENTS.md`](AGENTS.md) and [`.context/`](.context/). When something needs to exist in real life, its sibling [bambi](https://github.com/haitheredavid/bambi) takes over and prints it.
 
