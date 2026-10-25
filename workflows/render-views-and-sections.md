@@ -13,7 +13,7 @@ Named studio shots (`blend views`), matching cameras inside the .blend, and a li
    - `include = ["Ref"]` adds proxy meshes (art, glazing) that a normal render skips.
    - `zoom` + `target` (model coordinates) crop in on a detail.
 2. **Render:** `just views <s>` (or `--only NAME`) writes `out/views/<name>.png`. Tile them for a quick review with `ffmpeg ... tile=4x2`.
-3. **Add matching cameras to the .blend** (`builders/50_cameras.py`) so the user can press Ctrl+Numpad0 on `Cam_<name>`. For upright views, rotate the direction back with `(x, y, z) → (x, z, −y)` and use +Y as the camera's up.
+3. **Add matching cameras to the .blend** (`builders/50_cameras.py`) so the user can press Ctrl+Numpad0 on `Cam_<name>`. For upright views, rotate the direction back with `(x, y, z) → (x, z, −y)` and use +Y as the camera's up. To let people render with F12 inside Blender, also build a Stage collection: a sweep backdrop sized from the model, sun lights (they don't care about mm scale, unlike area lights), a world, and EEVEE. Read the cameras straight from `model.toml` `[[views]]` (azimuth, elevation, zoom, target), so the in-file shots and `blend views` stay the same. Reference: `models/art-dealers-logo/builders/50_stage.py`.
 4. **Live section (`builders/60_section.py`):**
    - Copy the parts into a `Section` collection under an offset root.
    - Each copy gets a boolean against a half-space box parented to a `Section_Plane` empty. The user moves or rotates the empty to move the cut.
@@ -36,6 +36,8 @@ m.translation = target + z * dist
 - **The zoom crop must be a cube around the target** (radius / zoom). Per-axis extents shrink thin axes (frame depth) to nothing.
 - **`render.png` and the gallery still use the flat, Model-only still.** Point people at `out/views/hero.png` for wall pieces.
 - **mm sessions need the viewport clip range scaled.** Defaults are 1000 BU = 1 m; `setup_scene.py` now scales it. Cameras need `clip_end` in mm too.
+- **Fit stage cameras to the evaluated mesh at build time.** They don't follow later size changes, so rerun `build_all` after big parameter changes.
 
 ## Models
 - witch-frame (2026-10-10): added `blend views` (hero, front, profile, plan, back, corner, clip), `Cam_*` cameras and a red-capped live section of frame + clips + art stack.
+- art-dealers-logo (2026-10-21): Stage collection plus `Cam_hero/front/low/detail` generated from `[[views]]`, so the family can render with F12.

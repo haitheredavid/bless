@@ -28,6 +28,14 @@ Build a model as a stack of Geometry Nodes pattern modifiers on a host object, d
    - Rendered: `just` → `uv run blend variants <m>` writes `out/variants.png`.
 5. **Readable trees.** Wrap each step of a builder in `with gn.stage(t, "1 · Outline ring"):`. `gn.arrange(t)` then lays the stages out left to right, each in a labelled, tinted Frame box, so the tree reads like the builder. Number the labels in flow order.
 6. **New pattern.** When a model-specific node tree proves reusable, move it to `lib/patterns/<name>.py` with `NAME`, `build(reset)` and `apply`. Add it to `patterns.ALL` and run `uv run blend patterns-lib`.
+7. **One panel for people who aren't modellers.** When a model has several hosts (for example one body per print colour), add a display host whose group (`GN_<Model>_<Name>`) runs the part groups as group nodes and joins them. Expose each shared input once, grouped with `t.interface.new_panel("Box")` and `t.interface.move_to_parent(sock, panel, i)`. Set the Control objects as defaults on the group-node sockets, so they don't show in the panel. Keep the part hosts in the hidden Print collection, and drive every non-object input from the display host:
+   ```python
+   slot = getattr(part_mod.properties.inputs, item.identifier)  # Blender 5 input storage
+   fc = slot.driver_add("value"); fc.driver.type = "AVERAGE"
+   var = fc.driver.variables.new(); var.targets[0].id = display_obj
+   var.targets[0].data_path = getattr(mod.properties.inputs, gn.socket_id(t, item.name)).path_from_id("value")
+   ```
+   The print parts then always match what's on screen, live and headless. Point `[print] collection` at Print (print-pack reveals it). Reference: `models/art-dealers-logo/builders/40_logo.py`.
 
 ## Patterns
 | module | group | inputs |
@@ -53,6 +61,9 @@ Build a model as a stack of Geometry Nodes pattern modifiers on a host object, d
 - **Offset an outline by a margin** (there is no curve-offset node). For a convex result, the Minkowski sum with a circle works: Convex Hull → Instance on Points (Curve Circle, radius = margin) → Realize → Convex Hull. A planar hull comes out as one flat face that Extrude Mesh accepts. For a small inset or outset of any closed curve, Set Position with offset `normalize(tangent × ±Z) × d` works, provided every loop winds the same way relative to its filled side (traced contours do; see `image-logo-relief.md`).
 - **Object Info in RELATIVE space** pins the result to the curve's world position. Moved hosts (variant copies) then lose their cuts. Patterns read curves in ORIGINAL space: edit the curve's points to reshape, and move the host to place.
 - **Input names are params keys.** Keep them unique across patterns (hence the `Pocket` prefix), or scope a key to one object: `"Frame/Height"`.
+- **Objects in a `hide_viewport` collection aren't evaluated**, so their evaluated mesh is empty in the live file (volume 0) even when drivers are correct. Check the display host instead, or let print-pack reveal the collection. Don't hide parts you need to measure over MCP.
+- **Materials a builder recreates every time** (`materials.principled(name, colour)`) undo hand-picked colours on every rebuild. Create them only if missing (`bpy.data.materials.get(name) or ...`) and give them names a person would recognise ("Box Colour").
 
 ## Models
 - art-dealers-logo (2026-10-21): traced logo curves → Fill Curve slabs, a box-minus-letters cut and an open tray (outer slab minus pocket), all GN on two hosts. Added the gotchas on the Manifold solver, shared subgroup resets and outline offsets.
+- art-dealers-logo (2026-10-21, one-panel-and-stage): a single `Logo` display host with Size/Box/Lettering panels; the print bodies sit in the hidden Print collection and are driven from it (step 7).
