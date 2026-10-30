@@ -13,13 +13,21 @@ pocket_cut). `blend patterns-lib` writes them all to assets/patterns.blend as as
 
 from patterns import (
     frame_loft,
+    joints,
     outline_extrude,
     pocket_cut,
     profile_sweep,
     section_piece,
 )
 
-ALL = (profile_sweep, outline_extrude, pocket_cut, frame_loft, section_piece)
+ALL = (
+    profile_sweep,
+    outline_extrude,
+    pocket_cut,
+    frame_loft,
+    section_piece,
+    *joints.ALL,
+)
 
 
 def build_all(reset: bool = False) -> list:

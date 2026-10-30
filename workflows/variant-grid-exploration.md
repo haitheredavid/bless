@@ -20,7 +20,7 @@ The steps below are for bmesh builders, which have no modifier inputs.
    - `look(mode="angles", views=["top"])` for outlines;
    - a low 3/4 view such as `[0.35, -1, 0.55]` for depth and profile.
    - Use a light grey explore material: dark materials read as silhouettes in solid shading.
-5. **Save the screenshots** to `out/explore-<axis>.png`, ask the user with `AskUserQuestion` (rows and columns described in the question), write the pick into the NN builder's params with a comment pointing at the screenshots, then `clear()`.
+5. **Save the screenshots** to `out/explore-<axis>.png`, ask the user (Claude Code: `AskUserQuestion`; omp: `ask`) with rows and columns described in the question, write the pick into the NN builder's params with a comment pointing at the screenshots, then `clear()`.
 
 ## bpy
 ```python

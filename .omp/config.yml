@@ -1,0 +1,17 @@
+# omp project settings (read only when omp starts in the repo root).
+# Claude Code reads the equivalents from .claude/settings.json.
+
+skills:
+  # bambi print skills, live from the sibling checkout (Claude Code: the bambi@bambi plugin).
+  customDirectories:
+    - ../bambi/src/bambi/skills
+
+bash:
+  # Starting a physical print always asks, even in yolo (Claude Code: bambi's guard_send hook).
+  patterns:
+    - match: "*printer send*--start*"
+      approval: prompt
+    - match: "just print"
+      approval: prompt
+    - match: "just print *"
+      approval: prompt

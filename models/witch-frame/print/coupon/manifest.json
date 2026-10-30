@@ -1,108 +1,212 @@
 {
+  "schema": "print-spec/1",
   "model": "witch-frame",
-  "created": "2026-10-11T12:20:21-04:00",
+  "pack": "coupon",
+  "intent": "3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with snap-in flex prongs for the art stack.",
+  "created": "2026-10-17T10:09:36-04:00",
+  "source": {
+    "repo": "blender-sessions",
+    "commit": "2425e18",
+    "blend": "models/witch-frame/model.blend"
+  },
   "units": "mm",
   "blend": "models/witch-frame/print/coupon/parts.blend",
   "stl_dir": "models/witch-frame/print/coupon/stl",
   "printer": "Bambu Lab P1S",
   "bed_mm": 256.0,
   "material": "PETG (Insignia, black)",
-  "orientation": "offcuts as modelled, back face down; tenons laid on a side face",
+  "orientation": "offcuts as modelled, back face down (trimmed flat at z 23); key and hanger flipped; spline and prong as modelled. Slice with supports on, build plate only (normal(auto), 0.2 mm top gap), like the frame: the offcuts keep the flat glazing lip at z 9",
   "hardware": [],
   "assembly": [
-    "Round 2 (round 1 picked TENON_CLEAR 0.10): two 0.10 coupons (1 notch) of the E seam. C10_Flat has the frame's flat 3.7 mm glazing lip at z 9; C10_Chamfer fills the rabbet corner under it with a 45 deg wedge.",
-    "Slice with supports on, build plate only (normal, 0.2 top gap): Flat's lip needs them, Chamfer's should get none. Compare the two lip undersides.",
-    "The full chamfer takes the glazing's seat; if it wins, the frame needs a deeper rabbet or a narrower wedge."
+    "One corner (TR) of the mitered frame and the hanger: Coupon_T (Rail_T's end, with the T+75 prong slot), Coupon_R (Rail_R's end) and Coupon_M (Rail_T's middle, with the hanger slots), plus the key, spline, prong and Hanger.",
+    "Spline: push it into Coupon_R's socket, then close Coupon_T across the miter. The miter line on the face should be flush; note any step or rock.",
+    "Key: press it into the back pocket across the miter until both arms click. Try to pull the corner apart and note how it fails.",
+    "Prong: set a scrap of the real backboard (and glazing if handy) in the rabbet, then push the prong's tongue into Coupon_T's slot until the barbs click. The bump should press the stack firmly against the lip. Note the click, how hard it is to pull out, and how hard it presses.",
+    "Hanger: snap it into Coupon_M's two slots. Drive the nail you'll hang with into scrap wood, head ~1.8 mm proud, hook the keyhole over it and slide down: the head should pass the round entry, run up the slot and hold behind the lip. Hang Coupon_M from it and tug; note if the head binds, the lip flexes or a tongue lets go.",
+    "Log each fit with /bambi:print-log (tight / good / loose) so the next pass can tune CLEAR, BARB, SNAP_*, PRONG_BUMP and HANGER_*."
   ],
   "parts": [
     {
-      "name": "Coupon_C10_Flat_Tenon",
+      "name": "Coupon_T",
       "size": [
-        9.67,
-        32.0,
-        3.5
+        74.7,
+        28.57,
+        23.04
       ],
-      "volume_cm3": 1.0,
-      "manifold": true,
-      "fits_bed": true,
-      "flat": true,
-      "stl": "stl/Coupon_C10_Flat_Tenon.stl"
-    },
-    {
-      "name": "Coupon_C10_Chamfer_Tenon",
-      "size": [
-        9.67,
-        32.0,
-        3.5
-      ],
-      "volume_cm3": 1.0,
-      "manifold": true,
-      "fits_bed": true,
-      "flat": true,
-      "stl": "stl/Coupon_C10_Chamfer_Tenon.stl"
-    },
-    {
-      "name": "Coupon_C10_Flat_B",
-      "size": [
-        12.45,
-        20.5,
-        16.24
-      ],
-      "volume_cm3": 2.51,
+      "volume_cm3": 15.8,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Coupon_C10_Flat_B.stl"
+      "stl": "stl/Coupon_T.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
+      },
+      "filament": 1
     },
     {
-      "name": "Coupon_C10_Chamfer_B",
+      "name": "Coupon_R",
       "size": [
-        12.45,
-        20.5,
-        16.24
+        28.58,
+        52.35,
+        23.04
       ],
-      "volume_cm3": 2.65,
+      "volume_cm3": 10.96,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Coupon_C10_Chamfer_B.stl"
+      "stl": "stl/Coupon_R.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
+      },
+      "filament": 1
     },
     {
-      "name": "Coupon_C10_Flat_A",
+      "name": "Coupon_Hanger",
       "size": [
-        11.67,
-        20.5,
-        16.24
+        40.0,
+        27.0,
+        3.8
       ],
-      "volume_cm3": 2.37,
+      "volume_cm3": 2.95,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Coupon_C10_Flat_A.stl"
+      "stl": "stl/Coupon_Hanger.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "flipped like the frame's key and hanger"
+      },
+      "filament": 1
     },
     {
-      "name": "Coupon_C10_Chamfer_A",
+      "name": "Coupon_Key",
       "size": [
-        11.67,
-        20.5,
-        16.24
+        26.5,
+        26.5,
+        5.0
       ],
-      "volume_cm3": 2.51,
+      "volume_cm3": 1.65,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Coupon_C10_Chamfer_A.stl"
+      "stl": "stl/Coupon_Key.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "flipped like the frame's key and hanger"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Coupon_M",
+      "size": [
+        52.0,
+        13.39,
+        23.04
+      ],
+      "volume_cm3": 10.29,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Coupon_M.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Coupon_Prong",
+      "size": [
+        8.6,
+        19.0,
+        2.9
+      ],
+      "volume_cm3": 0.23,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Coupon_Prong.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Coupon_Spline",
+      "size": [
+        10.04,
+        10.04,
+        7.22
+      ],
+      "volume_cm3": 0.31,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Coupon_Spline.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
     }
   ],
   "plates_suggested": [
     [
-      "Coupon_C10_Flat_Tenon",
-      "Coupon_C10_Chamfer_Tenon",
-      "Coupon_C10_Flat_B",
-      "Coupon_C10_Chamfer_B",
-      "Coupon_C10_Flat_A",
-      "Coupon_C10_Chamfer_A"
+      "Coupon_T",
+      "Coupon_R",
+      "Coupon_M",
+      "Coupon_Hanger",
+      "Coupon_Key",
+      "Coupon_Prong",
+      "Coupon_Spline"
     ]
   ],
-  "total_volume_cm3": 12.0
+  "total_volume_cm3": 42.2,
+  "feedback_applied": [],
+  "feedback_declined": []
 }

@@ -29,6 +29,7 @@ Durable context lives in `.context/` (conventions in `.context/README.md`):
 | `docs/gallery/` | README gallery tiles, rewritten on every render. |
 | `site/` | Pages gallery (Vite + R3F) over `models/*/web/*.glb`; see `workflows/web-demo.md`. |
 | `.claude/skills/` | `/model`, `/session`, `/checkpoint`, `/wrap`. |
+| `.omp/config.yml`, `.omp/commands/`, `.omp/lsp.json` | omp project settings: bambi skills from `../bambi`, print-start approval rule, Python LSP pinned to ty + ruff, `typescript-native` from `site/`. Slash commands symlinked to the `.claude/skills/` files. |
 
 ## Lifecycle
 
@@ -36,6 +37,8 @@ Durable context lives in `.context/` (conventions in `.context/README.md`):
 - `/session <m> [goal]` - a short sitting: load only the brief, params, last session note and recent steps; model live; log each step.
 - `/checkpoint [msg]` - save, check, publish a Speckle version, record it in the log.
 - `/wrap` - close the session: note, promote steps into builders, distill workflows, checkpoint, offer a commit.
+
+In omp the same files are slash commands through symlinks in `.omp/commands/`: `/new-model`, `/work`, `/checkpoint`, `/wrap`. `/model` and `/session` are omp built-ins, so those two are renamed. `/skill:<name>` also works.
 
 ## Printing (bambi plugin)
 
@@ -46,6 +49,8 @@ Durable context lives in `.context/` (conventions in `.context/README.md`):
 | `model.toml`, `builders/`, `params.toml` | this repo |
 | `print/**/manifest.json`, `parts.blend`, `stl/`, `README.md` | `blend print-pack` (bambi never edits them) |
 | `print/**/session.toml`, `results.json`, `thumb.png`, `out/` | bambi (print-pack never deletes them) |
+
+omp does not load Claude Code plugins enabled in `.claude/settings.json`. Instead `.omp/config.yml` points `skills.customDirectories` at `../bambi/src/bambi/skills` (`/skill:print`, `/skill:print-log`, ...), the CLI comes from `uv tool install --editable ../bambi`, and a `bash.patterns` prompt rule stands in for bambi's `guard_send` hook.
 
 Recommendations in `results.json` are bambi's only channel back: apply or decline each, record its id in `[print] feedback_applied` / `feedback_declined`, re-pack. Never run `bambi printer send --start` without the user's go-ahead.
 

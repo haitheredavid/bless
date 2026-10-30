@@ -26,6 +26,8 @@
 ## Python style
 
 - ruff for lint and format. Type hints on public functions.
+- ty for type checking (`uv run ty check`, not part of `just ci`). Dev group carries `fake-bpy-module-5.2` stubs, and `[tool.ty.environment] extra-paths` puts `lib/` and `blender_scripts/` on the import path.
+- omp language servers: ty + ruff (from `.venv`), marksman, and the built-in `typescript-native` for `site/`. `.omp/lsp.json` disables pyright, basedpyright and pylsp so ty is the only Python type server, and runs `typescript-native` from `site/node_modules/.bin/tsc` (TypeScript 7, `pnpm install` in `site/` first), rooted on `site/tsconfig.json`.
 - `@dataclass` for internal structures; `pydantic-settings` for config (`blend.config`).
 - Validate config early and raise a `ValueError` naming the toml key (see `Model.views()`).
 - Edit toml in place with `set_field` so comments survive; parse the result before writing.

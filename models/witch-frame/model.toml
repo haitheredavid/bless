@@ -1,6 +1,6 @@
 name = "witch-frame"
 created = "2026-10-10"
-intent = "3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with turn clips for a 10x13in backboard."                   # what is this model, and what is it for?
+intent = "3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with snap-in flex prongs for the art stack."                   # what is this model, and what is it for?
 status = "done"               # active | done (`blend model done` sets it)
 workflows = ["mcp-modeling-loop", "ring-sweep-frame", "variant-grid-exploration", "print-fit-and-sectioning", "photo-to-texture", "render-views-and-sections", "animation", "print-handoff", "web-demo"]                # workflows/<name>.md used or written for this model
 tags = ["3d-print", "frame", "stylized", "parametric", "halloween"]                     # e.g. ["hard-surface", "prop", "low-poly"]
@@ -12,7 +12,7 @@ length_unit = "MILLIMETERS"
 [export]                      # `blend export`
 formats = ["stl", "obj", "glb"]  # stl for the slicer; obj/glb for viewing
 split = true                  # one file per part
-collection = "Print"          # the 4 corner pieces, 4 loose tenons, 8 clips
+collection = "Print"          # 4 mitered rails, 4 back keys, 4 alignment splines, 10 prongs, 1 hanger
 
 [render]                      # `blend render` studio still -> render.png
 # framing = "fit"             # fit: fill the frame; wide: show the floor around it
@@ -23,26 +23,65 @@ collection = "Print"
 printer = "Bambu Lab P1S"
 bed = 256                     # mm, square
 material = "PETG (Insignia, black)"
-orientation = "pieces as modelled, back face down (gable-roofed mortises print without bridging); clips flat; tenons laid on a side face. Slice with supports on, build plate only (normal(auto), 0.2 mm top gap): the flat 3.7 mm glazing lip at z 9 (and the clip pockets' ceilings at z 4) sag without them (2026-10-11 coupon)"
-flat = ["Tenon_*"]            # print-pack lays these on their largest face
+orientation = "as modelled, back face down; the rails turned about z (rotate rules) so each lies along the bed's diagonal: a 356 mm side needs a 251.4 mm square, a 279 mm side 197.6. One long + one short side nest on a plate (long along the anti-diagonal, clear of the front-left exclusion zone; short in a corner triangle). Bambu's auto-arrange can't place the long rails (4.6 mm slack; 2026-10-16 test slice: 'Rail_R partly inside'), so place the two rail plates by hand until the pack carries locked plates. Keys flipped (deep end on the bed, so first-layer squish stays off the end that passes the pocket's lip). Prong slots and spline sockets have 45 deg gable roofs, key pockets a hip roof: no supports inside them. Slice with supports on, build plate only (normal(auto), 0.2 mm top gap) for the flat 3.7 mm glazing lip at z 9 (2026-10-11 coupon)"
 hardware = [
-  "8x M3x8 countersunk screws (turn clips), self-tapping into the 2.6 mm pilots",
+  "1x picture nail or wafer/truss-head screw (head <= 8.5 mm across and <= 2 mm tall, shank <= 4.4 mm), its head ~1.8 mm off the wall: the frame hangs from the Hanger plate's keyhole, centred, with the nail 31 mm below the frame's top tips (16 mm below the top edge at mid-span)",
 ]
 assembly = [
-  "Dry-fit the 4 corner pieces on a flat surface, face down.",
-  "Glue a loose tenon into the top pieces first: Tenon_N into TL/TR's top seam, Tenon_E into Piece_TR, Tenon_W into Piece_TL; Tenon_S into the bottom seam. Each tenon's pointed (gable) edge goes up, away from the back face. Epoxy or slow CA fills the 0.15 mm gaps (wood glue does not bond PETG). Print the Coupon pack first to confirm the clearance.",
-  "Glue the seam faces and close each half along x (top pair over Tenon_N, bottom pair over Tenon_S), then close the halves along y over Tenon_E/W. Clamp flat, face down.",
-  "Drop in glazing (2 mm), art on its 3 mm backboard, then screw the 8 turn clips over the backboard.",
+  "Print the Coupon pack first and check the corner (see its notes).",
+  "Dry-fit on a flat surface, face down. Push Spline_TR and Spline_BR into Rail_R's miter sockets, Spline_TL and Spline_BL into Rail_L's (each sits 5 mm deep; a drop of CA or epoxy if loose; wood glue does not bond PETG).",
+  "Close Rail_T onto Rail_R over Spline_TR, and Rail_B onto Rail_L over Spline_BL, pushing straight across each miter.",
+  "Close the two L halves along the diagonal: TL and BR meet over their splines at the same time.",
+  "Press a Key into each corner pocket from the back until both snap arms click under the lip. To release one, push its arm toward the slot through the back with a small screwdriver.",
+  "Drop in glazing (2 mm), the art on its 3 mm backboard, then push each prong's tongue out into its rabbet slot with the bump on the board until its barbs click into the slot's end pocket; the arm springs the stack against the lip. A firm pull on the arm releases one to change the art (45 deg barbs).",
+  "Snap the Hanger's two tongues into the slots at the top rail's centre (keyhole entry toward the art, plate flat on the board) until both click.",
+  "Hang: set the nail with its head ~1.8 mm off the wall. Offer the frame so the head enters the keyhole's round end, then let it drop ~8 mm onto the slot.",
 ]
 
+[[print.part]]
+match = ["Rail_T", "Rail_B"]
+rotate = [0, 0, -45]
+orientation_why = "along the bed's anti-diagonal: the 279 mm side fits a 197.6 mm square there"
+supports = "build-plate"
+supports_why = "flat 3.7 mm glazing lip at z 9"
+
+[[print.part]]
+match = ["Rail_L", "Rail_R"]
+rotate = [0, 0, 45]
+orientation_why = "along the bed's anti-diagonal: the 356 mm side needs a 251.4 mm square (4.6 mm slack)"
+supports = "build-plate"
+supports_why = "flat 3.7 mm glazing lip at z 9"
+
+[[print.part]]
+match = "Key_*"
+rotate = [180, 0, 0]
+orientation_why = "deep end on the bed: the end that passes the pocket's lip stays free of elephant's foot; the snap arms bend along the layers"
+
+[[print.part]]
+match = "Hanger"
+rotate = [180, 0, 0]
+orientation_why = "board side on the bed: the tongues print on the bed, the keyhole lip bridges its 9 mm head cavity, and the snap arms bend along the layers"
+
 [print.Coupon]                # `blend print-pack witch-frame --collection Coupon` -> print/coupon/
-orientation = "offcuts as modelled, back face down; tenons laid on a side face"
-flat = ["*_Tenon"]
+orientation = "offcuts as modelled, back face down (trimmed flat at z 23); key and hanger flipped; spline and prong as modelled. Slice with supports on, build plate only (normal(auto), 0.2 mm top gap), like the frame: the offcuts keep the flat glazing lip at z 9"
 assembly = [
-  "Round 2 (round 1 picked TENON_CLEAR 0.10): two 0.10 coupons (1 notch) of the E seam. C10_Flat has the frame's flat 3.7 mm glazing lip at z 9; C10_Chamfer fills the rabbet corner under it with a 45 deg wedge.",
-  "Slice with supports on, build plate only (normal, 0.2 top gap): Flat's lip needs them, Chamfer's should get none. Compare the two lip undersides.",
-  "The full chamfer takes the glazing's seat; if it wins, the frame needs a deeper rabbet or a narrower wedge.",
+  "One corner (TR) of the mitered frame and the hanger: Coupon_T (Rail_T's end, with the T+75 prong slot), Coupon_R (Rail_R's end) and Coupon_M (Rail_T's middle, with the hanger slots), plus the key, spline, prong and Hanger.",
+  "Spline: push it into Coupon_R's socket, then close Coupon_T across the miter. The miter line on the face should be flush; note any step or rock.",
+  "Key: press it into the back pocket across the miter until both arms click. Try to pull the corner apart and note how it fails.",
+  "Prong: set a scrap of the real backboard (and glazing if handy) in the rabbet, then push the prong's tongue into Coupon_T's slot until the barbs click. The bump should press the stack firmly against the lip. Note the click, how hard it is to pull out, and how hard it presses.",
+  "Hanger: snap it into Coupon_M's two slots. Drive the nail you'll hang with into scrap wood, head ~1.8 mm proud, hook the keyhole over it and slide down: the head should pass the round entry, run up the slot and hold behind the lip. Hang Coupon_M from it and tug; note if the head binds, the lip flexes or a tongue lets go.",
+  "Log each fit with /bambi:print-log (tight / good / loose) so the next pass can tune CLEAR, BARB, SNAP_*, PRONG_BUMP and HANGER_*.",
 ]
+
+[[print.Coupon.part]]
+match = ["Coupon_Key", "Coupon_Hanger"]
+rotate = [180, 0, 0]
+orientation_why = "flipped like the frame's key and hanger"
+
+[[print.Coupon.part]]
+match = ["Coupon_T", "Coupon_R", "Coupon_M"]
+supports = "build-plate"
+supports_why = "flat 3.7 mm glazing lip at z 9"
 
 [speckle]                     # /checkpoint publishes here; see .context/speckle-guide.md
 account = "haitheredavid@gmail.com"   # chosen by email, never the connector's default
@@ -79,7 +118,7 @@ azimuth = -90
 elevation = 89
 
 [[views]]
-name = "back"                 # rabbet, clip pockets and clips
+name = "back"                 # rabbet, prong slots, keys and prongs
 upright = true
 azimuth = 118
 elevation = 14
@@ -94,10 +133,18 @@ zoom = 4
 target = [127, 163, 20]
 
 [[views]]
-name = "clip"                 # one turn clip over the backboard, from behind
+name = "key"                  # the top-right back key across its miter, from behind
+upright = true
+azimuth = 110
+elevation = 35
+zoom = 6
+target = [119, 157, 3]
+
+[[views]]
+name = "prong"                # one prong over the backboard, from behind
 upright = true
 include = ["Ref"]
 azimuth = 105
 elevation = 30
 zoom = 7
-target = [92.8, 158.9, 3]
+target = [75, 150, 3]

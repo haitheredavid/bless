@@ -24,6 +24,12 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "fake-bpy-module-5-2>=20260730",
     "pytest>=9.1.1",
     "ruff>=0.17.0",
+    "ty>=0.0.89",
 ]
+
+[tool.ty.environment]
+# lib/ and blender_scripts/ go on sys.path at runtime (builders, headless scripts).
+extra-paths = ["lib", "blender_scripts"]

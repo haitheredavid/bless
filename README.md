@@ -35,14 +35,14 @@ just setup
 
 ### the agentic spice
 
-In Claude Code:
+In Claude Code (omp: `/new-model`, `/work`, `/checkpoint`, `/wrap`, symlinked from `.omp/commands/`):
 
 - `/model <idea>`: plan a new model and create `models/<slug>/`
 - `/session <model> [goal]`: one short sitting. It loads the brief, params and recent steps, models live in Blender, and logs each step
 - `/checkpoint [msg]`: publish a Speckle version of whatever state it's in
 - `/wrap`: promote steps into builders, then check, export and render. It also distills `workflows/`, checkpoints and offers a commit. Basically cleaning up after the party
 
-bambi is enabled here as a Claude Code plugin. `just print-pack <model>` writes a print pack and `/bambi:print models/<model>` takes it from there. See [`workflows/print-handoff.md`](workflows/print-handoff.md).
+bambi is enabled here as a Claude Code plugin; omp loads its skills from the sibling `../bambi` checkout via `.omp/config.yml` and needs `uv tool install --editable ../bambi` for the CLI. `just print-pack <model>` writes a print pack and `/bambi:print models/<model>` (omp: `/skill:print models/<model>`) takes it from there. See [`workflows/print-handoff.md`](workflows/print-handoff.md).
 
 ### recipes
 
@@ -68,6 +68,6 @@ Every `just render` drops a fresh tile here. Click one for its brief; hover for 
 <!-- gallery:start -->
 <p align="center">
 <a href="models/art-dealers-logo/brief.md"><img src="docs/gallery/art-dealers-logo.png" width="24%" alt="art-dealers-logo" title="150 mm two-colour desk block of the Art Dealers Galeria logo, printed as one part on the P1S: an open black tray (3 mm floor, 4 mm rim, 15 mm tall) with the white logo standing inside up to the rim top; the &#x27;Dealers&#x27; letters are knocked out through the white box to the black floor."></a>
-<a href="models/witch-frame/brief.md"><img src="docs/gallery/witch-frame.png" width="24%" alt="witch-frame" title="3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with turn clips for a 10x13in backboard."></a>
+<a href="models/witch-frame/brief.md"><img src="docs/gallery/witch-frame.png" width="24%" alt="witch-frame" title="3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with snap-in flex prongs for the art stack."></a>
 </p>
 <!-- gallery:end -->

@@ -2,11 +2,11 @@
   "schema": "print-spec/1",
   "model": "witch-frame",
   "pack": "print",
-  "intent": "3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with turn clips for a 10x13in backboard.",
-  "created": "2026-10-11T14:02:09-04:00",
+  "intent": "3D-printable shadow-box frame for a 9x12in witch illustration: concave bat-wing sides with flared corner tips, a face sloping from a thin outer edge into a deep sightwell, and a rabbet with snap-in flex prongs for the art stack.",
+  "created": "2026-10-17T10:09:34-04:00",
   "source": {
     "repo": "blender-sessions",
-    "commit": "921c1f6",
+    "commit": "2425e18",
     "blend": "models/witch-frame/model.blend"
   },
   "units": "mm",
@@ -15,229 +15,256 @@
   "printer": "Bambu Lab P1S",
   "bed_mm": 256.0,
   "material": "PETG (Insignia, black)",
-  "orientation": "pieces as modelled, back face down (gable-roofed mortises print without bridging); clips flat; tenons laid on a side face. Slice with supports on, build plate only (normal(auto), 0.2 mm top gap): the flat 3.7 mm glazing lip at z 9 (and the clip pockets' ceilings at z 4) sag without them (2026-10-11 coupon)",
+  "orientation": "as modelled, back face down; the rails turned about z (rotate rules) so each lies along the bed's diagonal: a 356 mm side needs a 251.4 mm square, a 279 mm side 197.6. One long + one short side nest on a plate (long along the anti-diagonal, clear of the front-left exclusion zone; short in a corner triangle). Bambu's auto-arrange can't place the long rails (4.6 mm slack; 2026-10-16 test slice: 'Rail_R partly inside'), so place the two rail plates by hand until the pack carries locked plates. Keys flipped (deep end on the bed, so first-layer squish stays off the end that passes the pocket's lip). Prong slots and spline sockets have 45 deg gable roofs, key pockets a hip roof: no supports inside them. Slice with supports on, build plate only (normal(auto), 0.2 mm top gap) for the flat 3.7 mm glazing lip at z 9 (2026-10-11 coupon)",
   "hardware": [
-    "8x M3x8 countersunk screws (turn clips), self-tapping into the 2.6 mm pilots"
+    "1x picture nail or wafer/truss-head screw (head <= 8.5 mm across and <= 2 mm tall, shank <= 4.4 mm), its head ~1.8 mm off the wall: the frame hangs from the Hanger plate's keyhole, centred, with the nail 31 mm below the frame's top tips (16 mm below the top edge at mid-span)"
   ],
   "assembly": [
-    "Dry-fit the 4 corner pieces on a flat surface, face down.",
-    "Glue a loose tenon into the top pieces first: Tenon_N into TL/TR's top seam, Tenon_E into Piece_TR, Tenon_W into Piece_TL; Tenon_S into the bottom seam. Each tenon's pointed (gable) edge goes up, away from the back face. Epoxy or slow CA fills the 0.15 mm gaps (wood glue does not bond PETG). Print the Coupon pack first to confirm the clearance.",
-    "Glue the seam faces and close each half along x (top pair over Tenon_N, bottom pair over Tenon_S), then close the halves along y over Tenon_E/W. Clamp flat, face down.",
-    "Drop in glazing (2 mm), art on its 3 mm backboard, then screw the 8 turn clips over the backboard."
+    "Print the Coupon pack first and check the corner (see its notes).",
+    "Dry-fit on a flat surface, face down. Push Spline_TR and Spline_BR into Rail_R's miter sockets, Spline_TL and Spline_BL into Rail_L's (each sits 5 mm deep; a drop of CA or epoxy if loose; wood glue does not bond PETG).",
+    "Close Rail_T onto Rail_R over Spline_TR, and Rail_B onto Rail_L over Spline_BL, pushing straight across each miter.",
+    "Close the two L halves along the diagonal: TL and BR meet over their splines at the same time.",
+    "Press a Key into each corner pocket from the back until both snap arms click under the lip. To release one, push its arm toward the slot through the back with a small screwdriver.",
+    "Drop in glazing (2 mm), the art on its 3 mm backboard, then push each prong's tongue out into its rabbet slot with the bump on the board until its barbs click into the slot's end pocket; the arm springs the stack against the lip. A firm pull on the arm releases one to change the art (45 deg barbs).",
+    "Snap the Hanger's two tongues into the slots at the top rail's centre (keyhole entry toward the art, plate flat on the board) until both click.",
+    "Hang: set the nail with its head ~1.8 mm off the wall. Offer the frame so the head enters the keyhole's round end, then let it drop ~8 mm onto the slot."
   ],
   "parts": [
     {
-      "name": "Piece_TR",
+      "name": "Rail_R",
       "size": [
-        139.7,
-        177.8,
+        251.45,
+        251.45,
         40.0
       ],
-      "volume_cm3": 86.04,
+      "volume_cm3": 99.88,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Piece_TR.stl",
+      "stl": "stl/Rail_R.stl",
       "orientation": {
-        "mode": "as-modelled",
+        "mode": "rotate",
         "rotate_deg": [
           0.0,
           0.0,
-          0.0
-        ]
+          45.0
+        ],
+        "why": "along the bed's anti-diagonal: the 356 mm side needs a 251.4 mm square (4.6 mm slack)"
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
       },
       "filament": 1
     },
     {
-      "name": "Piece_TL",
+      "name": "Rail_L",
       "size": [
-        139.7,
-        177.8,
+        251.45,
+        251.45,
         40.0
       ],
-      "volume_cm3": 86.72,
+      "volume_cm3": 100.21,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Piece_TL.stl",
+      "stl": "stl/Rail_L.stl",
       "orientation": {
-        "mode": "as-modelled",
+        "mode": "rotate",
         "rotate_deg": [
           0.0,
           0.0,
-          0.0
-        ]
+          45.0
+        ],
+        "why": "along the bed's anti-diagonal: the 356 mm side needs a 251.4 mm square (4.6 mm slack)"
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
       },
       "filament": 1
     },
     {
-      "name": "Piece_BL",
+      "name": "Rail_T",
       "size": [
-        139.7,
-        177.8,
+        197.57,
+        197.57,
         40.0
       ],
-      "volume_cm3": 91.87,
+      "volume_cm3": 74.37,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Piece_BL.stl",
+      "stl": "stl/Rail_T.stl",
       "orientation": {
-        "mode": "as-modelled",
+        "mode": "rotate",
         "rotate_deg": [
           0.0,
           0.0,
-          0.0
-        ]
+          -45.0
+        ],
+        "why": "along the bed's anti-diagonal: the 279 mm side fits a 197.6 mm square there"
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
       },
       "filament": 1
     },
     {
-      "name": "Piece_BR",
+      "name": "Rail_B",
       "size": [
-        139.7,
-        177.8,
+        197.57,
+        194.87,
         40.0
       ],
-      "volume_cm3": 89.31,
+      "volume_cm3": 76.31,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Piece_BR.stl",
+      "stl": "stl/Rail_B.stl",
       "orientation": {
-        "mode": "as-modelled",
+        "mode": "rotate",
         "rotate_deg": [
           0.0,
           0.0,
-          0.0
-        ]
+          -45.0
+        ],
+        "why": "along the bed's anti-diagonal: the 279 mm side fits a 197.6 mm square there"
+      },
+      "supports": {
+        "policy": "build-plate",
+        "why": "flat 3.7 mm glazing lip at z 9"
       },
       "filament": 1
     },
     {
-      "name": "Tenon_S",
+      "name": "Hanger",
       "size": [
-        32.0,
-        10.82,
-        6.0
-      ],
-      "volume_cm3": 1.83,
-      "manifold": true,
-      "fits_bed": true,
-      "flat": true,
-      "fit": [
-        155.09999389648425,
-        161.09999389648425,
-        2.15,
-        10.249999999999988
-      ],
-      "stl": "stl/Tenon_S.stl",
-      "orientation": {
-        "mode": "flat",
-        "rotate_deg": [
-          0.0,
-          0.0,
-          0.0
-        ]
-      },
-      "filament": 1
-    },
-    {
-      "name": "Tenon_N",
-      "size": [
-        32.0,
-        9.87,
-        4.3
-      ],
-      "volume_cm3": 1.23,
-      "manifold": true,
-      "fits_bed": true,
-      "flat": true,
-      "fit": [
-        155.09999389648425,
-        159.39999389648426,
-        2.15,
-        10.149999999999986
-      ],
-      "stl": "stl/Tenon_N.stl",
-      "orientation": {
-        "mode": "flat",
-        "rotate_deg": [
-          0.0,
-          0.0,
-          0.0
-        ]
-      },
-      "filament": 1
-    },
-    {
-      "name": "Tenon_W",
-      "size": [
-        9.72,
-        32.0,
+        40.0,
+        27.0,
         3.8
       ],
-      "volume_cm3": 1.09,
-      "manifold": true,
-      "fits_bed": true,
-      "flat": true,
-      "fit": [
-        117.00000305175769,
-        120.80000305175768,
-        2.15,
-        10.249999999999988
-      ],
-      "stl": "stl/Tenon_W.stl",
-      "orientation": {
-        "mode": "flat",
-        "rotate_deg": [
-          0.0,
-          0.0,
-          0.0
-        ]
-      },
-      "filament": 1
-    },
-    {
-      "name": "Tenon_E",
-      "size": [
-        9.67,
-        32.0,
-        3.5
-      ],
-      "volume_cm3": 1.0,
-      "manifold": true,
-      "fits_bed": true,
-      "flat": true,
-      "fit": [
-        117.00000305175769,
-        120.50000305175769,
-        2.15,
-        10.349999999999987
-      ],
-      "stl": "stl/Tenon_E.stl",
-      "orientation": {
-        "mode": "flat",
-        "rotate_deg": [
-          0.0,
-          0.0,
-          0.0
-        ]
-      },
-      "filament": 1
-    },
-    {
-      "name": "Clip_01",
-      "size": [
-        9.0,
-        16.5,
-        3.0
-      ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 2.95,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_01.stl",
+      "stl": "stl/Hanger.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "board side on the bed: the tongues print on the bed, the keyhole lip bridges its 9 mm head cavity, and the snap arms bend along the layers"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Key_TR",
+      "size": [
+        26.5,
+        26.5,
+        5.0
+      ],
+      "volume_cm3": 1.65,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Key_TR.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "deep end on the bed: the end that passes the pocket's lip stays free of elephant's foot; the snap arms bend along the layers"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Key_TL",
+      "size": [
+        26.5,
+        26.5,
+        5.0
+      ],
+      "volume_cm3": 1.65,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Key_TL.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "deep end on the bed: the end that passes the pocket's lip stays free of elephant's foot; the snap arms bend along the layers"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Key_BL",
+      "size": [
+        26.5,
+        26.5,
+        5.0
+      ],
+      "volume_cm3": 1.65,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Key_BL.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "deep end on the bed: the end that passes the pocket's lip stays free of elephant's foot; the snap arms bend along the layers"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Key_BR",
+      "size": [
+        26.5,
+        26.5,
+        5.0
+      ],
+      "volume_cm3": 1.65,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Key_BR.stl",
+      "orientation": {
+        "mode": "rotate",
+        "rotate_deg": [
+          180.0,
+          0.0,
+          0.0
+        ],
+        "why": "deep end on the bed: the end that passes the pocket's lip stays free of elephant's foot; the snap arms bend along the layers"
+      },
+      "filament": 1
+    },
+    {
+      "name": "Prong_01",
+      "size": [
+        8.6,
+        19.0,
+        2.9
+      ],
+      "volume_cm3": 0.23,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Prong_01.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -249,17 +276,17 @@
       "filament": 1
     },
     {
-      "name": "Clip_02",
+      "name": "Prong_02",
       "size": [
-        16.5,
-        9.0,
-        3.0
+        8.6,
+        19.0,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_02.stl",
+      "stl": "stl/Prong_02.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -271,17 +298,17 @@
       "filament": 1
     },
     {
-      "name": "Clip_03",
+      "name": "Prong_03",
       "size": [
-        9.0,
-        16.5,
-        3.0
+        8.6,
+        19.0,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_03.stl",
+      "stl": "stl/Prong_03.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -293,17 +320,17 @@
       "filament": 1
     },
     {
-      "name": "Clip_04",
+      "name": "Prong_04",
       "size": [
-        16.5,
-        9.0,
-        3.0
+        8.6,
+        19.0,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_04.stl",
+      "stl": "stl/Prong_04.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -315,17 +342,17 @@
       "filament": 1
     },
     {
-      "name": "Clip_05",
+      "name": "Prong_05",
       "size": [
-        9.0,
-        16.5,
-        3.0
+        19.0,
+        8.6,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_05.stl",
+      "stl": "stl/Prong_05.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -337,17 +364,17 @@
       "filament": 1
     },
     {
-      "name": "Clip_06",
+      "name": "Prong_07",
       "size": [
-        16.5,
-        9.0,
-        3.0
+        19.0,
+        8.6,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_06.stl",
+      "stl": "stl/Prong_07.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -359,17 +386,17 @@
       "filament": 1
     },
     {
-      "name": "Clip_07",
+      "name": "Prong_08",
       "size": [
-        9.0,
-        16.5,
-        3.0
+        19.0,
+        8.6,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_07.stl",
+      "stl": "stl/Prong_08.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -381,17 +408,149 @@
       "filament": 1
     },
     {
-      "name": "Clip_08",
+      "name": "Prong_10",
       "size": [
-        16.5,
-        9.0,
-        3.0
+        19.0,
+        8.6,
+        2.9
       ],
-      "volume_cm3": 0.35,
+      "volume_cm3": 0.23,
       "manifold": true,
       "fits_bed": true,
       "flat": false,
-      "stl": "stl/Clip_08.stl",
+      "stl": "stl/Prong_10.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Prong_06",
+      "size": [
+        19.0,
+        8.6,
+        2.9
+      ],
+      "volume_cm3": 0.23,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Prong_06.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Prong_09",
+      "size": [
+        19.0,
+        8.6,
+        2.9
+      ],
+      "volume_cm3": 0.23,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Prong_09.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Spline_TR",
+      "size": [
+        10.04,
+        10.04,
+        7.22
+      ],
+      "volume_cm3": 0.31,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Spline_TR.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Spline_TL",
+      "size": [
+        10.04,
+        10.04,
+        7.22
+      ],
+      "volume_cm3": 0.31,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Spline_TL.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Spline_BL",
+      "size": [
+        10.04,
+        10.04,
+        7.22
+      ],
+      "volume_cm3": 0.31,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Spline_BL.stl",
+      "orientation": {
+        "mode": "as-modelled",
+        "rotate_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "filament": 1
+    },
+    {
+      "name": "Spline_BR",
+      "size": [
+        10.04,
+        10.04,
+        7.22
+      ],
+      "volume_cm3": 0.31,
+      "manifold": true,
+      "fits_bed": true,
+      "flat": false,
+      "stl": "stl/Spline_BR.stl",
       "orientation": {
         "mode": "as-modelled",
         "rotate_deg": [
@@ -405,31 +564,38 @@
   ],
   "plates_suggested": [
     [
-      "Piece_TR",
-      "Tenon_S",
-      "Tenon_N",
-      "Tenon_W",
-      "Tenon_E",
-      "Clip_01",
-      "Clip_02",
-      "Clip_03",
-      "Clip_04",
-      "Clip_05",
-      "Clip_06",
-      "Clip_07",
-      "Clip_08"
+      "Rail_R"
     ],
     [
-      "Piece_TL"
+      "Rail_L"
     ],
     [
-      "Piece_BL"
+      "Rail_T",
+      "Hanger",
+      "Key_TR",
+      "Key_TL",
+      "Key_BL",
+      "Key_BR",
+      "Prong_01",
+      "Prong_02",
+      "Prong_03",
+      "Prong_04",
+      "Prong_05",
+      "Prong_07",
+      "Prong_08",
+      "Prong_10",
+      "Prong_06",
+      "Prong_09"
     ],
     [
-      "Piece_BR"
+      "Rail_B",
+      "Spline_TR",
+      "Spline_TL",
+      "Spline_BL",
+      "Spline_BR"
     ]
   ],
-  "total_volume_cm3": 361.9,
+  "total_volume_cm3": 363.9,
   "feedback_applied": [],
   "feedback_declined": []
 }

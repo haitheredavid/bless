@@ -43,7 +43,7 @@ This step is the point of the repo. Follow `.context/writing-workflows.md`:
 
 ## 5. Checkpoint and close
 
-1. Run `/checkpoint "<session summary>"` to publish a Speckle version (`.context/speckle-guide.md`). If Speckle isn't set up for this model yet, say so and skip.
+1. Follow the `checkpoint` skill with `"<session summary>"` to publish a Speckle version (`.context/speckle-guide.md`). If Speckle isn't set up for this model yet, say so and skip.
 2. If `--done` is set or the user says the model is finished: `just done <m>`.
 3. Show a summary: the render, exports, check numbers, steps promoted, workflows touched, and the Speckle version.
 4. Offer a commit, e.g. `feat(models): <m> <session slug>` plus `docs(workflows): ...`. Do **not** commit or push without the user's go-ahead.

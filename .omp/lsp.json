@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "pyright": { "disabled": true },
+    "basedpyright": { "disabled": true },
+    "pylsp": { "disabled": true },
+    "typescript-native": {
+      "command": "site/node_modules/.bin/tsc",
+      "rootMarkers": ["site/tsconfig.json"]
+    }
+  }
+}
