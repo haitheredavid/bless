@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- cerberus-mask, round 3 side profiles (wearer faces -x). 1 unit = 1 mm.
+     Each cell's origin = pupil, SVG y down. Cells: half/skull (0,0), half/flesh (420,0),
+     full/skull (0,430), full/flesh (420,430). Dashed grey = head proxy, grey fill = side head behind. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="760mm" height="850mm" viewBox="-130 -215 760 850">
+  <defs>
+    <path id="proxy" d="M 10 -70 Q 0 -110 60 -125 Q 160 -132 186 -40 Q 192 40 140 110 L 60 132 Q 15 126 10 110 L 6 76 Q -4 62 -8 52 L -16 46 L -6 36 L 0 0 Q 5 -40 10 -70 Z" fill="none" stroke="#888" stroke-width="1.3" stroke-dasharray="4 3"/>
+    <g id="sideHint" fill="#e4e1da" stroke="#888" stroke-width="1.3">
+      <path d="M 70 -55 L 92 -128 L 112 -52 Z"/>
+      <circle cx="86" cy="-18" r="40"/>
+      <ellipse cx="58" cy="16" rx="22" ry="18"/>
+      <ellipse cx="52" cy="16" rx="6" ry="7" fill="#888"/>
+    </g>
+    <g id="collar" fill="#f4f1ea" stroke="#111" stroke-width="1.6">
+      <path d="M 40 92 Q 12 150 -14 192 L 175 192 Q 172 132 140 104 Z"/>
+      <path d="M 30 120 Q 90 135 150 120 M 18 150 Q 90 168 165 150" fill="none" stroke="#888"/>
+    </g>
+    <g id="skullHalf" stroke="#111" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M 30 -120 L 52 -192 L 76 -118 Z" fill="#f4f1ea"/>
+      <path d="M 110 -118 Q 50 -142 -8 -100 Q -30 -70 -30 -22 L -14 -14 L -14 12 L -30 18 L -98 28 L -100 40 L -28 60 L -22 74 Q 20 60 45 25 L 110 0 Z" fill="#f4f1ea"/>
+      <polyline points="-96,41 -92,49 -87,42 -81,51 -75,44 -69,53 -63,46 -57,55 -51,48 -45,57 -39,50 -33,58" fill="none" stroke-width="1"/>
+      <path d="M -46 56 L -41 78 L -35 58 Z" fill="#f4f1ea"/>
+      <ellipse cx="-18" cy="-1" rx="11" ry="15" fill="#111"/>
+      <ellipse cx="-94" cy="33" rx="4" ry="5" fill="#111"/>
+      <path d="M -30 -24 Q -10 -40 25 -30 M 0 30 Q 20 20 40 22" fill="none" stroke-width="1"/>
+    </g>
+    <g id="skullJaw" stroke="#111" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M -26 76 L -86 84 Q -92 92 -84 98 L -20 108 Q 22 112 42 84 Z" fill="#f4f1ea"/>
+      <polyline points="-82,84 -78,77 -73,85 -67,76 -61,86 -55,77 -49,87 -43,78 -37,88" fill="none" stroke-width="1"/>
+      <path d="M -56 84 L -52 66 L -47 84 Z" fill="#f4f1ea"/>
+    </g>
+    <g id="fleshHalf" stroke="#111" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M 30 -118 Q 42 -186 68 -178 Q 82 -150 76 -116 Z" fill="#f4f1ea"/>
+      <path d="M 40 -122 Q 50 -168 64 -166" fill="none" stroke-width="1"/>
+      <path d="M 110 -118 Q 50 -146 -6 -102 Q -28 -76 -30 -32 Q -24 -18 -16 -16 L -14 10 Q -42 8 -70 14 Q -98 18 -104 30 Q -102 44 -88 47 L -30 58 L -22 72 Q 20 60 45 25 L 110 0 Z" fill="#f4f1ea"/>
+      <path d="M -88 47 Q -62 58 -32 52" fill="none"/>
+      <path d="M -48 54 L -43 74 L -37 56 Z" fill="#f4f1ea"/>
+      <ellipse cx="-99" cy="27" rx="8" ry="7" fill="#111"/>
+      <path d="M -27 -4 Q -18 -13 -9 -4 Q -18 5 -27 -4 Z" fill="#111"/>
+      <path d="M -66 4 Q -60 -4 -54 4 M -54 1 Q -48 -7 -42 1 M -42 -1 Q -36 -9 -30 -1" fill="none" stroke-width="1.1"/>
+      <path d="M -32 -26 Q -16 -36 4 -24 M -28 -34 Q -12 -46 10 -34" fill="none" stroke-width="1.1"/>
+      <polyline points="110,-118 104,-108 112,-100 104,-90 112,-80 104,-70 112,-60 104,-50" fill="none" stroke-width="1"/>
+    </g>
+    <g id="fleshJaw" stroke="#111" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M -26 74 L -82 80 Q -90 90 -80 100 Q -40 112 -10 112 Q 30 112 42 84 Z" fill="#f4f1ea"/>
+      <path d="M -80 82 Q -60 90 -34 84" fill="none" stroke-width="1.1"/>
+      <path d="M -60 84 L -56 68 L -51 84 Z" fill="#f4f1ea"/>
+      <path d="M -40 106 Q -30 116 -14 112" fill="none" stroke-width="1"/>
+    </g>
+  </defs>
+  <g id="Half_Skull">
+    <use xlink:href="#proxy" href="#proxy"/><use xlink:href="#sideHint" href="#sideHint"/><use xlink:href="#skullHalf" href="#skullHalf"/>
+  </g>
+  <g id="Half_Flesh" transform="translate(420,0)">
+    <use xlink:href="#proxy" href="#proxy"/><use xlink:href="#sideHint" href="#sideHint"/><use xlink:href="#fleshHalf" href="#fleshHalf"/>
+  </g>
+  <g id="Full_Skull" transform="translate(0,430)">
+    <use xlink:href="#proxy" href="#proxy"/><use xlink:href="#sideHint" href="#sideHint"/><use xlink:href="#collar" href="#collar"/><use xlink:href="#skullHalf" href="#skullHalf"/><use xlink:href="#skullJaw" href="#skullJaw"/>
+  </g>
+  <g id="Full_Flesh" transform="translate(420,430)">
+    <use xlink:href="#proxy" href="#proxy"/><use xlink:href="#sideHint" href="#sideHint"/><use xlink:href="#collar" href="#collar"/><use xlink:href="#fleshHalf" href="#fleshHalf"/><use xlink:href="#fleshJaw" href="#fleshJaw"/>
+  </g>
+  <g font-size="12" fill="#111" text-anchor="middle">
+    <text x="30" y="-200">half / skull</text>
+    <text x="450" y="-200">half / flesh</text>
+    <text x="30" y="225">full / skull</text>
+    <text x="450" y="225">full / flesh</text>
+  </g>
+</svg>

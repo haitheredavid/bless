@@ -1,0 +1,128 @@
+# GN inputs for this model. kit.params pushes [base] (merged with a variant's overrides)
+# into the matching modifier inputs by socket name. Keys are the GN input names.
+# GN_CerberusMask_Heads builds everything except the keys marked "not built yet".
+# Base = the chosen direction (2026-10-25): side heads on necks rising from the shoulder
+# yoke, posed unevenly (was variant collar-asym).
+
+[base]
+"Eye Height" = 420.0         # mm, pupils above z=0; CTL curves and the bust proxy sit there
+"Full Mask" = false          # half: center head without lower jaw; full: + jaw
+"Flesh" = false              # not built yet: skull vs fleshed blob sets
+"Side From Collar" = true    # side heads on necks from the CTL_Collar shoulder yoke (false: at the temples)
+"Side Yaw" = 35.0            # deg, side snouts swing forward from straight out
+"Side Spread" = 176.0        # mm, temple mode: distance between the temple anchors
+"Side Back" = 30.0           # mm, temple mode: side heads behind the eye plane
+"Side Drop" = 10.0           # mm, temple mode: side heads below the eye line
+"Side Scale" = 0.8           # side heads smaller than the center (design review: hierarchy)
+"Snout Length" = 90.0        # mm, nose tip forward of the face plane (center and sides)
+"Jaw Open" = 20.0            # deg
+"Cranium Scale" = 0.95       # dome/brow/cheek thickness (dog-skull curves, 2026-10-25)
+"Left Pitch" = 25.0          # deg, + = snout up (about the neck root)
+"Left Tilt" = -15.0          # deg, + = head cocked, top forward
+"Right Pitch" = -20.0
+"Right Tilt" = 15.0
+"Right Yaw Offset" = 15.0    # deg, right head only, added to Side Yaw
+"Right Drop Offset" = 0.0    # mm, right head only, added to the drop
+"Right Back Offset" = 0.0    # mm, right head only (was -40: blocked the right eye from 34 deg)
+"Ear Size" = 1.0
+"Horn Length" = 0.0          # not built yet, mm
+"Neck Extrude" = 180.0       # mm, neck length (collar) / push-out from the temple (temple)
+"Neck Radius" = 34.0         # mm
+"Neck Curve" = 60.0          # mm, collar necks arch forward (swan neck)
+"Neck Taper" = 0.6           # root thicker than the skull end
+"Shoulder Width" = 300.0     # mm, collar mode: between the two neck roots
+"Shoulder Drop" = 205.0      # mm, collar mode: neck roots below the eye line
+"Shoulder Forward" = 135.0   # mm, collar mode: neck roots behind the eye plane (necks rise behind the center ears)
+"Center Scale" = 1.15        # center head (face mask) size about the pupils; 1.25 put the mask over 200 g
+"Face Clear" = 6.0           # mm, face proxy -> mask inside (foam + air)
+"Wall" = 2.4                 # mm, mask shell
+"Mask Back" = 40.0           # mm, mask clipped behind this head-local Y plane
+"Visor Thick" = 1.2          # mm, eye grille insert glued inside the mask
+"Visor Margin" = 8.0          # mm, visor overlap past the eye openings (glue land)
+"Grille Hole" = 3.0          # mm, visor hole diameter
+"Grille Bar" = 0.9           # mm, bar between holes
+"Visor Voxel" = 0.5          # mm, visor SDF resolution
+"Voxel Size" = 2.0           # mm, SDF resolution (facet density)
+"Fillet" = 12                # SDF fillet iterations: how much the parts melt together
+"Smooth" = 3                 # SDF mean-filter iterations
+
+# Collar mode, mirrored
+[variants.collar]
+"Side Yaw" = 40.0
+"Cranium Scale" = 0.8
+"Neck Extrude" = 170.0
+"Neck Radius" = 30.0
+"Snout Length" = 85.0
+"Jaw Open" = 18.0
+"Left Pitch" = 0.0
+"Left Tilt" = 0.0
+"Right Pitch" = 0.0
+"Right Tilt" = 0.0
+"Right Yaw Offset" = 0.0
+"Right Back Offset" = 0.0
+
+# Earlier direction: side heads at the temples, merged into the mask
+[variants.temple]
+"Neck Curve" = 0.0
+"Neck Taper" = 0.0
+"Side From Collar" = false
+"Side Yaw" = 15.0
+"Side Scale" = 0.8
+"Snout Length" = 70.0
+"Jaw Open" = 12.0
+"Cranium Scale" = 1.0
+"Left Pitch" = 0.0
+"Left Tilt" = 0.0
+"Right Pitch" = 0.0
+"Right Tilt" = 0.0
+"Right Yaw Offset" = 0.0
+"Right Back Offset" = 0.0
+"Neck Extrude" = 20.0
+"Neck Radius" = 38.0
+
+[variants.temple-asym]       # uneven heads on the mask (was asym)
+"Neck Curve" = 0.0
+"Neck Taper" = 0.0
+"Side From Collar" = false
+"Side Back" = 10.0
+"Side Scale" = 0.95
+"Snout Length" = 85.0
+"Jaw Open" = 18.0
+"Cranium Scale" = 0.72
+"Left Pitch" = 28.0
+"Left Tilt" = -12.0
+"Right Pitch" = -18.0
+"Right Tilt" = 14.0
+"Right Yaw Offset" = 22.0
+"Right Drop Offset" = 35.0
+"Right Back Offset" = -15.0
+"Neck Extrude" = 45.0
+"Neck Radius" = 24.0
+
+# Not built yet: format x skin (side.svg)
+[variants.full-skull]
+"Full Mask" = true
+
+[variants.flesh]
+"Flesh" = true
+
+# Shape axes over the base
+[variants.snarl]
+"Snout Length" = 110.0
+"Jaw Open" = 30.0
+
+[variants.horned]
+"Ear Size" = 0.7
+"Horn Length" = 60.0
+
+[variants.chunky]
+"Voxel Size" = 5.0
+"Fillet" = 0
+"Smooth" = 0
+
+# Fast exploration: coarser SDFs (~8x fewer voxels). `blend build cerberus-mask --variant preview`
+[variants.preview]
+"Voxel Size" = 4.0
+"Fillet" = 4
+"Smooth" = 1
+"Visor Voxel" = 1.0

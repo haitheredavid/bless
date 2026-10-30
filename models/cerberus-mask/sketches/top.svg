@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- cerberus-mask, round 2 top concept. 1 unit = 1 mm. Origin = midpoint between the pupils;
+     SVG -y = forward (the wearer faces up the page). Dashed red = seams for the 256 mm bed. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="460mm" height="300mm" viewBox="-230 -160 460 300">
+  <ellipse id="HeadProxy" cx="0" cy="40" rx="75" ry="100" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="4 3"/>
+  <path id="Strap" d="M -95 30 Q 0 200 95 30" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="6 3"/>
+  <g stroke="#111" stroke-width="1.5" fill="#f4f1ea" stroke-linejoin="round">
+    <path id="Snout_L" d="M -110 -25 L -215 -58 L -219 -44 L -122 15 Z"/>
+    <path id="Snout_R" d="M 110 -25 L 215 -58 L 219 -44 L 122 15 Z"/>
+    <ellipse id="Cranium_L" cx="-100" cy="5" rx="34" ry="40"/>
+    <ellipse id="Cranium_R" cx="100" cy="5" rx="34" ry="40"/>
+    <path id="Dome" d="M -92 34 Q -104 -78 0 -84 Q 104 -78 92 34 Q 80 -40 0 -46 Q -80 -40 -92 34 Z"/>
+    <path id="Snout_C" d="M -30 -80 L -20 -138 Q 0 -148 20 -138 L 30 -80 Z"/>
+  </g>
+  <path id="Seams" d="M -84 -95 L -84 60 M 84 -95 L 84 60" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="0" y="-150" text-anchor="middle" font-size="9" fill="#888">center ≈170 mm</text>
+  <text x="-195" y="25" text-anchor="middle" font-size="9" fill="#888">side ≈135</text>
+  <text x="195" y="25" text-anchor="middle" font-size="9" fill="#888">side ≈135</text>
+</svg>

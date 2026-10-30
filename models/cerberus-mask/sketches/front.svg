@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- cerberus-mask, round 2 front concept (half mask, skull, side heads at temples).
+     1 unit = 1 mm. Origin = midpoint between the wearer's pupils, SVG y down.
+     Dashed grey = head proxy, dashed red = see-through openings. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="460mm" height="290mm" viewBox="-230 -170 460 290">
+  <defs>
+    <g id="sk" stroke="#111" stroke-width="1.2" stroke-linejoin="round">
+      <path d="M -30 -45 L -20 -110 L 5 -50 Z" fill="#f4f1ea"/>
+      <path d="M -45 20 Q -80 45 -116 38 L -113 30 Q -80 34 -50 12 Z" fill="#f4f1ea"/>
+      <polyline points="-110,32 -106,25 -102,33 -96,26 -90,34 -84,27 -78,34 -72,27 -66,32" fill="none" stroke-width="0.8"/>
+      <ellipse cx="-10" cy="-15" rx="45" ry="42" fill="#f4f1ea"/>
+      <path d="M -40 -32 Q -90 -32 -126 -6 L -126 8 Q -85 11 -45 12 Z" fill="#f4f1ea"/>
+      <polyline points="-118,8 -114,17 -110,9 -104,18 -98,10 -92,18 -86,10 -80,17 -74,10 -68,16 -62,10" fill="none" stroke-width="0.8"/>
+      <ellipse cx="-122" cy="0" rx="5" ry="6" fill="#111"/>
+      <ellipse cx="-28" cy="-15" rx="13" ry="11" fill="#111"/>
+      <ellipse cx="-28" cy="-15" rx="9" ry="7" fill="none" stroke="#c0392b" stroke-dasharray="2 1.5"/>
+      <path d="M -8 10 Q -30 26 -52 14" fill="none"/>
+    </g>
+  </defs>
+  <ellipse id="HeadProxy" cx="0" cy="15" rx="72" ry="105" fill="none" stroke="#888" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <use xlink:href="#sk" href="#sk" transform="translate(-88,-10)"/>
+  <use xlink:href="#sk" href="#sk" transform="translate(88,-10) scale(-1,1)"/>
+  <g stroke="#111" stroke-width="1.2" stroke-linejoin="round" fill="#f4f1ea">
+    <path id="Ear_L" d="M -60 -85 L -72 -155 L -25 -108 Z"/>
+    <path id="Ear_R" d="M 60 -85 L 72 -155 L 25 -108 Z"/>
+    <path id="Cranium" d="M -78 -20 Q -86 -112 0 -118 Q 86 -112 78 -20 Q 70 22 40 32 L -40 32 Q -70 22 -78 -20 Z"/>
+    <path id="Muzzle" d="M -33 18 Q -37 55 -26 72 L 26 72 Q 37 55 33 18 Z"/>
+    <path d="M -24 70 L -20 88 L -15 71 Z"/>
+    <path d="M 24 70 L 20 88 L 15 71 Z"/>
+  </g>
+  <polyline points="-14,72 -11,78 -8,72 -5,78 -2,72 1,78 4,72 7,78 10,72 13,78" fill="none" stroke="#111" stroke-width="0.8"/>
+  <path d="M 0 -116 L 0 -45" stroke="#888" stroke-width="1"/>
+  <path d="M -58 -22 Q -33 -38 -10 -21 M 58 -22 Q 33 -38 10 -21" fill="none" stroke="#111" stroke-width="2"/>
+  <path d="M -78 -5 Q -60 20 -34 24 M 78 -5 Q 60 20 34 24" fill="none" stroke="#111" stroke-width="0.9"/>
+  <ellipse id="Socket_L" cx="-31.5" cy="0" rx="21" ry="17" fill="#111"/>
+  <ellipse id="Socket_R" cx="31.5" cy="0" rx="21" ry="17" fill="#111"/>
+  <ellipse id="EyeOpening_L" cx="-31.5" cy="0" rx="17" ry="11" fill="none" stroke="#c0392b" stroke-width="1.2" stroke-dasharray="3 2"/>
+  <ellipse id="EyeOpening_R" cx="31.5" cy="0" rx="17" ry="11" fill="none" stroke="#c0392b" stroke-width="1.2" stroke-dasharray="3 2"/>
+  <path id="NasalVent" d="M -9 40 Q 0 30 9 40 Q 6 52 0 55 Q -6 52 -9 40 Z" fill="#111"/>
+  <path d="M -215 100 L 215 100 M -215 95 L -215 105 M 215 95 L 215 105" stroke="#888" stroke-width="0.8"/>
+  <text x="0" y="112" text-anchor="middle" font-size="7" fill="#888">≈430 mm</text>
+</svg>
