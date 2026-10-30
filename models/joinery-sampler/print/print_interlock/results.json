@@ -1,0 +1,60 @@
+{
+  "schema": "print-results/1",
+  "model": "joinery-sampler",
+  "pack": "print_interlock",
+  "runs": [
+    {
+      "id": "che-20261017-01",
+      "kind": "check",
+      "at": "2026-10-17T11:27:03-04:00",
+      "severity": "warn",
+      "summary": {
+        "ok": 3,
+        "warn": 8,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "1ae193ec5b037dda"
+    },
+    {
+      "id": "che-20261017-02",
+      "kind": "check",
+      "at": "2026-10-17T11:27:09-04:00",
+      "severity": "warn",
+      "summary": {
+        "ok": 3,
+        "warn": 8,
+        "block": 0
+      },
+      "layer_height": 0.2,
+      "supports": false,
+      "report": "out/check.json",
+      "spec_hash": "1ae193ec5b037dda"
+    },
+    {
+      "id": "sli-20261017-01",
+      "kind": "slice",
+      "at": "2026-10-17T11:27:10-04:00",
+      "file": "out/joinery-sampler-print_interlock.gcode.3mf",
+      "machine": "p1s_0.4",
+      "process": "0.20mm_standard",
+      "filaments": [
+        "petg_hf"
+      ],
+      "plate": "Textured PEI Plate",
+      "overrides": {
+        "enable_support": 0
+      },
+      "seconds": 3873,
+      "grams": 35.6,
+      "grams_per_filament": [
+        35.6
+      ],
+      "filament_changes": 0,
+      "spec_hash": "1ae193ec5b037dda"
+    }
+  ],
+  "recommendations": []
+}

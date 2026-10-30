@@ -1,0 +1,37 @@
+# GN inputs for this model. kit.params pushes [base] (merged with a variant's overrides)
+# into the matching modifier inputs by socket name. Keys are the GN input names.
+# build_all applies it to Model (the display board); 20_print.py applies [base] to the
+# Print sweep parts. Clearances are not params: each joint's `fit` and `sweep` live in
+# builders/catalog.py (the coupon picks replace `fit`).
+
+[base]
+"Bar Width" = 18.0          # bar section (y), mm
+"Bar Height" = 18.0         # bar section (z)
+"Bar Length" = 25.0         # each half, along the mating axis (x)
+"Edge Chamfer" = 0.4        # every bar edge; beats elephant's foot
+"Label Size" = 4.5          # engraved font size
+"Label Depth" = 0.4         # two layers at 0.2
+"Joint Chamfer" = 0.4       # male edge chamfer and socket mouth flare
+"Dovetail Angle" = 15.0     # flank angle from the mating axis, degrees
+"Dovetail Neck" = 8.0       # tail width at the joint face
+"Dovetail Depth" = 6.0      # tail reach into B
+"Key Length" = 20.0         # butterfly key, overall
+"Key Waist" = 6.0           # at the seam
+"Key Angle" = 15.0
+"Key Depth" = 5.0           # key thickness
+"Key Floor Gap" = 0.2       # key seats one layer below the surface
+"Explode" = 0.0             # display board: A/B pulled apart along x, loose parts up z
+
+[variants.slim]
+"Bar Width" = 16.0
+"Bar Height" = 16.0
+
+[variants.chunky]
+"Bar Width" = 22.0
+"Bar Height" = 22.0
+
+[variants.dt_steep]
+"Dovetail Angle" = 20.0
+
+[variants.exploded]
+"Explode" = 15.0
