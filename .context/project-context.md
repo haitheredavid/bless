@@ -33,6 +33,7 @@ user <-> Blender (live)  <--MCP:9876-- agent (execute_blender_code, look)
 | `workflows/` | Technique docs distilled from sessions. |
 | `assets/` | Studio scene and the patterns asset library. |
 | `.claude/skills/` | `/model`, `/session`, `/checkpoint`, `/wrap`. They point at these guides. |
+| `.omp/config.yml`, `.omp/commands/` | omp project settings (bambi skills from `../bambi`, print-start approval) and slash commands symlinked to the skills (`/new-model`, `/work`, `/checkpoint`, `/wrap`). |
 | `AGENTS.md`, `.context/` | Agent context. |
 
 ## Durable Decisions

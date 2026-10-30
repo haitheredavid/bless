@@ -35,14 +35,14 @@ just setup
 
 ### the agentic spice
 
-In Claude Code:
+In Claude Code (omp: `/new-model`, `/work`, `/checkpoint`, `/wrap`, symlinked from `.omp/commands/`):
 
 - `/model <idea>`: plan a new model and create `models/<slug>/`
 - `/session <model> [goal]`: one short sitting. It loads the brief, params and recent steps, models live in Blender, and logs each step
 - `/checkpoint [msg]`: publish a Speckle version of whatever state it's in
 - `/wrap`: promote steps into builders, then check, export and render. It also distills `workflows/`, checkpoints and offers a commit. Basically cleaning up after the party
 
-bambi is enabled here as a Claude Code plugin. `just print-pack <model>` writes a print pack and `/bambi:print models/<model>` takes it from there. See [`workflows/print-handoff.md`](workflows/print-handoff.md).
+bambi is enabled here as a Claude Code plugin; omp loads its skills from the sibling `../bambi` checkout via `.omp/config.yml` and needs `uv tool install --editable ../bambi` for the CLI. `just print-pack <model>` writes a print pack and `/bambi:print models/<model>` (omp: `/skill:print models/<model>`) takes it from there. See [`workflows/print-handoff.md`](workflows/print-handoff.md).
 
 ### recipes
 
