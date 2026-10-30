@@ -19,3 +19,4 @@ Reusable Blender techniques distilled from sessions. Read the relevant ones befo
 | [print-handoff](print-handoff.md) | `blend print-pack`: baked mm parts.blend + STLs + manifest for the printing agent (bambi) |
 | [web-demo](web-demo.md) | `just site-export` + `blend site`: publish a model to the Pages gallery (R3F viewer, exploded print parts) |
 | [image-logo-relief](image-logo-relief.md) | Logo image → traced Control curves (skimage) → two-colour GN relief/tray; stroke measurement, outline grow, sliver trim |
+| [sdf-organic-blend](sdf-organic-blend.md) | Organic, printable forms from radius-weighted Control curves → SDF blend; tagged cutters, shells around a body proxy, grille inserts, requirement checks |

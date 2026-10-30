@@ -14,6 +14,7 @@ Sketch a form in grease pencil, then turn the stroke into a Control curve that G
    - closed is inferred when the ends meet.
 3. **Feed a pattern.** Example: `outline_extrude.apply(host, Outline=bpy.data.objects["CTL_WingEdge"])`.
 4. **Refine by hand.** The curve is a copy. `to_curve` won't overwrite it unless `replace=True`, so rebuilds keep the user's edits. Keep the sketch as reference (hide it), or delete it.
+5. **Concept sketches as SVG.** Agent-drawn concept SVGs (1 unit = 1 mm, origin at a named anchor such as the pupils, shapes with ids) import with `bpy.ops.import_curve.svg` at true size. Stand each one on its plane through the anchor's bounding box. Set the curves to `dimensions = "2D"` and `fill_mode = "NONE"`, or the filled shapes hide the model (`"NONE"` is invalid on 3D curves). Reference: `models/cerberus-mask/builders/30_guides.py`.
 
 ## Gotchas
 - **GPv3 API:**

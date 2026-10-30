@@ -41,7 +41,11 @@ bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
   - Studio light scaling (fixed in `render_studio.py`).
 - **Builders that touch Ref (or other collections)** must clear their own objects. `build_all` only clears Model and Work.
 - **Dark print-colour materials read as black blobs** in `look` and studio renders. Use a mid-tone display colour and record the real filament colour in notes.
-- **Put constraints in the builder as asserts** (min wall, envelope, skin over holes). Bad params then fail loudly on rebuild.
+- **Put constraints in the builder as asserts** (min wall, envelope, skin over holes). Bad params then fail loudly on rebuild. For requirements from the brief, use `builders/checks.py`, which runs after params in `build_all`.
+- **MCP calls time out at 30 s; the call keeps running in Blender.** Re-query the state, don't re-run the call. Anything heavy goes through `just build <m>` (headless, no timeout), then File > Revert in the open Blender. Promote steps into builders as soon as they work, so a rebuild never depends on scratch scripts.
+- **`look` in mm files:** `distance` is unusable (it frames nothing, or the eye ends up inside the model). Frame close-ups with `target=[...]`: a part, or an invisible vertex-only mesh box around the region.
+- **Speed up a slow viewport loop by splitting the GN tree per part** (a rig group feeding part groups that each carry only their own inputs), so an edit re-evaluates only what uses it. See `sdf-organic-blend.md`.
 
 ## Models
 - witch-frame (2026-10-10): first session; added the mm-unit, session-module and builder-assert notes.
+- cerberus-mask (2026-10-26): MCP timeouts led to `blend build` (headless, `--allow-fail`), `checks.py`, and the mm `look` framing note.
