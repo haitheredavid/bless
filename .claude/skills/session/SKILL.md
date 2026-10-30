@@ -38,7 +38,7 @@ Follow **Connect** in `blender-mcp-guide.md`: if Blender isn't open, `just open 
 5. Param changes the user accepts go back into `params.toml`.
 6. To compare options, build a variant grid (`workflows/variant-grid-exploration.md`) and let the user pick.
 
-Save (`bpy.ops.wm.save_mainfile()`) before any `just` command. When the user says "checkpoint", run `/checkpoint`.
+Save (`bpy.ops.wm.save_mainfile()`) before any `just` command. When the user says "checkpoint", follow the `checkpoint` skill.
 
 ## 4. Close the sitting
 
@@ -47,4 +47,4 @@ Fill in the session note:
 - **Outcome:** state, dims and open issues.
 - **Next:** the obvious next goal.
 
-Save the file. Suggest `/wrap` to promote steps into builders, distill workflows, publish a checkpoint and commit.
+Save the file. Suggest wrapping (the `wrap` skill) to promote steps into builders, distill workflows, publish a checkpoint and commit.
