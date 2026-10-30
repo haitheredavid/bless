@@ -1,21 +1,17 @@
-# Print sectioning + joinery: four corner pieces split at the mid-sides, joined by a
-# glued loose tenon inside each seam.
+# Print sectioning + joinery: four mitered rails, joined at the corners.
 #
-# Pieces (Print collection) are live GN_SectionPiece cuts of Frame: edit the frame (its
-# Control outline or modifier inputs) and the pieces follow. The seam faces are the full
-# frame profile, so the joint hides inside them instead of in the narrow back strip
-# (8-11 mm at the mid-sides, too thin for a recess with real walls).
+# Rails (Print collection) are live GN_SectionPiece cuts of Frame: edit the frame (its
+# Control outline or modifier inputs) and the rails follow. Each miter runs at 45 deg
+# through the sight and rabbet corners (joinery.K); a wedge cutter per rail end removes
+# the neighbour's side and leans SEAM_CHAMFER into the back edge (elephant's foot).
 #
-# Each tenon is a chamfered bar running across its seam, TENON_LEN/2 into each piece.
-# Its section is fitted to the frame profile at the seam, sampled over the tenon's whole
-# length: >= WALL of plastic all round the mortise (back face, rabbet, outer edge, cove),
-# width capped at TENON_W. One box per seam (Cut_Tenons) cuts both mortises: the tenon
-# + TENON_CLEAR per side + TENON_END at each blind end (glue room, nozzle-rounded
-# corners). Chamfers on every tenon edge ride over elephant's foot and lead it in.
-# Pieces print back face down, so the mortise (and the tenon) has a 45 deg gable roof: it
-# prints without bridging, and the fit keeps WALL clear of the gable's apex too.
-# The back edge of every seam face gets a SEAM_CHAMFER, so first-layer squish can't hold
-# the seam open.
+# Joints (joinery.py), one identical set per corner, cut into Frame as live booleans
+# before sectioning so they cross the miter:
+# - Key_<corner>: an L tenon pressed into an L pocket on the back. Snap arms catch under
+#   the pocket's mouth lip, so it clicks in and holds the corner closed.
+# - Spline_<corner>: a 10 mm alignment tenon across the miter at the sight corner, above
+#   the glazing lip, keeping the visible miter line flush.
+# Neither stands proud of a rail, so the 356 mm rails keep their 45 deg bed fit.
 import importlib
 import math
 import sys
@@ -24,184 +20,108 @@ from pathlib import Path
 import bmesh
 import bpy
 from kit import mesh, scene
-from mathutils import Vector
+from mathutils import Vector, geometry
 from patterns import section_piece
 
 sys.path.insert(0, str(Path(__file__).parent))
 import joinery
 
-importlib.reload(joinery)  # before binding names, so edits apply without a restart
-from joinery import (
-    TENON_CHAMFER,
-    TENON_CLEAR,
-    TENON_END,
-    TENON_LEN,
-    TENON_MIN,
-    TENON_W,
-    WALL,
-    gable,
-    prism,
-    seam_wedge,
-)
+importlib.reload(joinery)
 
 BED = 256.0
-STEP = 0.1  # fitting resolution
+BED_MARGIN = 2.0  # keep this much clear of the bed edge at the best rotation
 
 frame = bpy.data.objects["Frame"]
 parts = scene.parts()
-for o in list(
-    parts.objects
-):  # rebuild Print: drop our pieces/tenons, unlink shared parts
+for o in list(parts.objects):  # rebuild Print: drop our parts, unlink shared ones
     if len(o.users_collection) == 1:
         bpy.data.objects.remove(o, do_unlink=True)
     else:
         parts.objects.unlink(o)
 
-dg = bpy.context.evaluated_depsgraph_get()
-ev = frame.evaluated_get(dg)
-dims = ev.dimensions
-src = bmesh.new()
-src.from_mesh(ev.data)
-src.transform(frame.matrix_world)
-
-
-def section(seam_axis: int, off: float, side: int) -> list:
-    """Frame profile where the plane (seam_axis coord = off) crosses the rail on `side`:
-    2D segments in (distance from centre across the rail, z)."""
-    bm = src.copy()
-    no = Vector((1, 0, 0)) if seam_axis == 0 else Vector((0, 1, 0))
-    geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
-    cut = bmesh.ops.bisect_plane(bm, geom=geom, plane_co=no * off, plane_no=no)
-    a = 1 - seam_axis  # across-the-rail axis
-    out = []
-    for e in cut["geom_cut"]:
-        if isinstance(e, bmesh.types.BMEdge):
-            p, q = (v.co for v in e.verts)
-            if p[a] * side > 0 and q[a] * side > 0:
-                out.append(((abs(p[a]), p.z), (abs(q[a]), q.z)))
-    bm.free()
-    return out
-
-
-def clear_of(pt, segs) -> bool:
-    """pt inside the profile (even-odd) and >= WALL from every edge of it."""
-    px, pz = pt
-    crossings = 0
-    for (ax, az), (bx, bz) in segs:
-        if (az > pz) != (bz > pz) and px < ax + (pz - az) * (bx - ax) / (bz - az):
-            crossings += 1
-        dx, dz = bx - ax, bz - az
-        ll = dx * dx + dz * dz
-        t = (
-            0.0
-            if ll == 0
-            else max(0.0, min(1.0, ((px - ax) * dx + (pz - az) * dz) / ll))
-        )
-        if math.hypot(ax + t * dx - px, az + t * dz - pz) < WALL:
-            return False
-    return crossings % 2 == 1
-
-
-def mortise_ok(sections, s0, s1, z0, z1) -> bool:
-    poly = gable(s0, s1, z0, z1, TENON_CLEAR)
-    n = 8
-    ring = [
-        (ax + (bx - ax) * i / n, az + (bz - az) * i / n)
-        for (ax, az), (bx, bz) in zip(poly, poly[1:] + poly[:1])
-        for i in range(n)
-    ]
-    return all(clear_of(p, segs) for segs in sections for p in ring)
-
-
-def fit(seam_axis: int, side: int) -> tuple[float, float, float, float]:
-    """Largest tenon section (s0, s1, z0, z1) clear of the profile along its length:
-    as wide as fits (<= TENON_W) with TENON_MIN walls under its gable, then as tall as
-    fits. z1 is the top of the walls; the apex is (s1 - s0) / 2 above it."""
-    half = TENON_LEN / 2 + TENON_END + TENON_CLEAR
-    sections = [
-        section(seam_axis, o, side) for o in (-half, -half / 2, 0, half / 2, half)
-    ]
-    z0 = WALL + TENON_CLEAR + STEP / 2  # floor clear of the back face
-    back = [pt[0] for segs in sections for sg in segs for pt in sg if pt[1] < 0.01]
-    lo, hi = min(back), max(back)  # widest the back strip gets; walls trim it below
-    best = None
-    s = lo
-    while s < hi:
-        w = TENON_MIN
-        if mortise_ok(sections, s, s + w, z0, z0 + TENON_MIN):
-            while w + STEP <= TENON_W and mortise_ok(
-                sections, s, s + w + STEP, z0, z0 + TENON_MIN
-            ):
-                w += STEP
-            if best is None or w > best[1] - best[0] + 1e-6:
-                best = (s, s + w)
-        s += STEP
-    assert best, (
-        f"seam {seam_axis}/{side}: no {TENON_MIN} mm tenon with {WALL} mm walls"
-    )
-    s0, s1 = best
-    h = TENON_MIN
-    while mortise_ok(sections, s0, s1, z0, z0 + h + STEP):
-        h += STEP
-    return s0, s1, z0, z0 + h
-
-
-cut_bm = bmesh.new()
-tenons = []
-# (name, seam axis, side): N/S tenons cross the x=0 seam in the top/bottom rails;
-# E/W cross the y=0 seam in the right/left rails
-for name, seam_axis, side in (("N", 0, 1), ("S", 0, -1), ("E", 1, 1), ("W", 1, -1)):
-    s0, s1, z0, z1 = fit(seam_axis, side)
-    w, h = s1 - s0, z1 - z0
-    prism(
-        cut_bm,
-        gable(s0, s1, z0, z1, TENON_CLEAR),
-        seam_axis,
-        side,
-        TENON_LEN + 2 * TENON_END,
-    )
-    tb = bmesh.new()
-    prism(tb, gable(s0, s1, z0, z1), seam_axis, side, TENON_LEN, TENON_CHAMFER)
-    tenon = mesh.from_bmesh(f"Tenon_{name}", tb, parts)
-    tenon.color = (0.9, 0.55, 0.2, 1)
-    tenons.append((name, w, h + w / 2, z0))
-    tenon["fit"] = (s0, s1, z0, z1)  # 45_coupon cuts its test mortises from this
-    tenon["seam"] = (seam_axis, side)
-# seam back chamfers, from the sight opening out through each rail (the wedges don't
-# cross, so the cutter has no self-intersection)
-for seam_axis, side in ((0, 1), (0, -1), (1, 1), (1, -1)):
-    seam_wedge(cut_bm, seam_axis, side, dims[1 - seam_axis] / 4, max(dims))
-src.free()
-
-cutter = mesh.from_bmesh("Cut_Tenons", cut_bm, scene.work())
-cutter.display_type = "WIRE"
-cutter.hide_render = True
-
-big = max(dims) * 2
-for name, (sx, sy) in (
-    ("TR", (1, 1)),
-    ("TL", (-1, 1)),
-    ("BL", (-1, -1)),
-    ("BR", (1, -1)),
-):
-    lo = Vector((min(0, sx * big), min(0, sy * big), -1))
-    hi = Vector((max(0, sx * big), max(0, sy * big), dims.z + 10))
-    piece = mesh.from_bmesh(f"Piece_{name}", bmesh.new(), parts)
-    section_piece.apply(piece, Source=frame, Box_Min=lo, Box_Max=hi, Cutter=cutter)
-for clip in (o for o in scene.model().objects if o.name.startswith("Clip_")):
-    parts.objects.link(clip)
+keys = joinery.union(
+    "Cut_Keys",
+    [s for c in joinery.CORNERS for s in joinery.key_pocket_shells(c)],
+    scene.work(),
+)
+spline_bm = bmesh.new()
+for c in joinery.CORNERS:
+    joinery.spline_socket(spline_bm, c)
+for cutter in (keys, mesh.from_bmesh("Cut_Splines", spline_bm, scene.work())):
+    # EXACT empties the frame on the key cut (or, with self-intersection on, leaves two
+    # open edges at the BR horn tip); Manifold cuts both cleanly
+    mesh.boolean(frame, cutter).solver = joinery.SOLVER
 
 bpy.context.view_layer.update()
-dg = bpy.context.evaluated_depsgraph_get()
-for o in parts.objects:
-    if o.name.startswith("Piece_"):
-        w, h, d = o.evaluated_get(dg).dimensions
-        assert max(w, h) <= BED, (
-            f"{o.name} {w:.1f} x {h:.1f} does not fit the {BED} bed"
-        )
-        print(f"sections: {o.name} {w:.1f} x {h:.1f} x {d:.1f} mm")
-for name, w, h, z0 in tenons:
-    print(
-        f"sections: Tenon_{name} {TENON_LEN:.0f} x {w:.1f} x {h:.1f} mm (gable) at z {z0:.2f}, "
-        f">= {WALL} mm walls"
+dims = frame.evaluated_get(bpy.context.evaluated_depsgraph_get()).dimensions
+big = max(dims) * 2
+# rail: (box min, box max, (corner, side kept) per miter end)
+RAILS = {
+    "T": ((-big, 0), (big, big), (("TR", "H"), ("TL", "H"))),
+    "B": ((-big, -big), (big, 0), (("BR", "H"), ("BL", "H"))),
+    "R": ((0, -big), (big, big), (("TR", "V"), ("BR", "V"))),
+    "L": ((-big, -big), (0, big), (("TL", "V"), ("BL", "V"))),
+}
+for r, (lo, hi, ends) in RAILS.items():
+    bm = bmesh.new()
+    for corner, keep in ends:
+        joinery.miter_wedges(bm, corner, keep, top=dims.z + 10)
+    cutter = mesh.from_bmesh(f"Cut_Miter_{r}", bm, scene.work())
+    cutter.display_type, cutter.hide_render = "WIRE", True
+    rail = mesh.from_bmesh(f"Rail_{r}", bmesh.new(), parts)
+    section_piece.apply(
+        rail,
+        Source=frame,
+        Box_Min=Vector((*lo, -1)),
+        Box_Max=Vector((*hi, dims.z + 10)),
+        Cutter=cutter,
     )
+
+for c in joinery.CORNERS:
+    key = joinery.union(f"Key_{c}", joinery.key_shells(c), parts)
+    mesh.clean(key)
+    key.color = (0.9, 0.55, 0.2, 1)
+    key["corner"] = c
+    bm = bmesh.new()
+    joinery.spline_part(bm, c)
+    spline = mesh.from_bmesh(f"Spline_{c}", bm, parts)
+    spline.color = (0.9, 0.55, 0.2, 1)
+    spline["corner"] = c
+for part in (
+    o for o in scene.model().objects if o.name.startswith(("Prong_", "Hanger"))
+):
+    parts.objects.link(part)
+
+
+def bed_fit(obj) -> tuple[float, float]:
+    """Smallest square side the part's footprint fits in, and the z rotation (deg) for it."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = obj.evaluated_get(dg).data
+    pts = [v.co.to_2d() for v in me.vertices]
+    hull = [pts[i] for i in geometry.convex_hull_2d(pts)]
+    best = (math.inf, 0.0)
+    for step in range(0, 900, 5):
+        a = math.radians(step / 10)
+        ca, sa = math.cos(a), math.sin(a)
+        xs = [p.x * ca - p.y * sa for p in hull]
+        ys = [p.x * sa + p.y * ca for p in hull]
+        side = max(max(xs) - min(xs), max(ys) - min(ys))
+        best = min(best, (side, step / 10))
+    return best
+
+
+bpy.context.view_layer.update()
+for r in RAILS:
+    rail = parts.objects[f"Rail_{r}"]
+    side, deg = bed_fit(rail)
+    assert side <= BED - BED_MARGIN, f"Rail_{r} needs a {side:.1f} mm square"
+    rail["bed_fit"] = (round(side, 1), deg)
+    w, h, d = rail.evaluated_get(bpy.context.evaluated_depsgraph_get()).dimensions
+    print(
+        f"sections: Rail_{r} {w:.1f} x {h:.1f} x {d:.1f} mm, fits {side:.1f} at {deg} deg"
+    )
+print(
+    f"sections: 4 x Key {joinery.KEY_LEG:.0f} mm legs x {joinery.KEY_W:.0f} x "
+    f"{joinery.KEY_T:.0f}; 4 x Spline {2 * joinery.SPLINE_D:.0f} x {joinery.SPLINE_W:.0f} x "
+    f"{joinery.SPLINE_H + joinery.SPLINE_W / 2:.1f} (gable)"
+)

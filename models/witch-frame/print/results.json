@@ -27,6 +27,18 @@
       ],
       "filament_changes": 0,
       "spec_hash": "293b5d88d50e1bee"
+    },
+    {
+      "id": "pri-20261011-01",
+      "kind": "print",
+      "at": "2026-10-11T18:26:43-04:00",
+      "state": "uploaded",
+      "file": "out/witch-frame.gcode.3mf",
+      "plate": 2,
+      "slice": "sli-20261011-01",
+      "ams_mapping": [
+        3
+      ]
     }
   ],
   "recommendations": []
