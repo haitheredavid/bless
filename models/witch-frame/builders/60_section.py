@@ -1,11 +1,11 @@
 # Live section cut, beside the model (Section collection; never checked/exported/rendered).
 #
-# Copies of the frame, clips and proxies sit under Section_Root (offset -X so they don't
+# Copies of the frame, prongs and proxies sit under Section_Root (offset -X so they don't
 # overlap Model). Each copy has a boolean against Section_Cutter, a box parented to the
 # Section_Plane empty: it removes everything on the plane's -X side, and the cut faces turn
 # red. Move or rotate Section_Plane (it uses model coordinates) to move the cut:
 #   X = 0      mid-span of the top/bottom rails (the narrowest wall)
-#   X = 92.8   through the top-right clip pivot
+#   X = 75     through the top-right prong and its slot
 #   rotate Z   45-ish to cut along a hip line toward a corner tip
 # Cam_section frames the whole cut; Cam_section_rail zooms on the top rail's profile.
 import math
