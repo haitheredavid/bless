@@ -48,12 +48,27 @@ def variants() -> list[str]:
         return ["base"]
 
 
+def targets() -> list:
+    """Objects params apply to by default: Model and Work (a Work object can drive Model
+    parts, e.g. a rig the parts read through Object Info), minus the variant grid."""
+    grid_objs = (
+        set(bpy.data.collections[GRID].all_objects)
+        if GRID in bpy.data.collections
+        else set()
+    )
+    return [
+        o
+        for o in (*scene.model().all_objects, *scene.work().all_objects)
+        if o not in grid_objs
+    ]
+
+
 def apply(params: dict | str = "base", objects=None) -> dict:
-    """Push params into GN inputs of objects (default: Model). Returns
+    """Push params into GN inputs of objects (default: targets()). Returns
     {"set": [(obj, modifier, input, value)], "unused": [keys that matched nothing]}."""
     if isinstance(params, str):
         params = load(params)
-    objects = list(objects if objects is not None else scene.model().all_objects)
+    objects = list(objects if objects is not None else targets())
     applied, used = [], set()
     for key, value in params.items():
         target, _, name = key.rpartition("/")
@@ -67,6 +82,31 @@ def apply(params: dict | str = "base", objects=None) -> dict:
                     applied.append((obj.name, mod.name, name, value))
                     used.add(key)
     return {"set": applied, "unused": sorted(set(params) - used)}
+
+
+def missing(params: dict | str = "base", objects=None) -> list[str]:
+    """Value inputs (not geometry/object/collection/material) on the GN modifiers of
+    objects (default: targets()) that no params key covers, as "Object/Input". A rebuild that
+    re-creates an input resets it to the socket default, so an uncovered input can change
+    silently; builds should treat a non-empty result as an error."""
+    if isinstance(params, str):
+        params = load(params)
+    keys = set(params)
+    objects = list(objects if objects is not None else targets())
+    out = []
+    for obj in objects:
+        for mod in gn.gn_modifiers(obj):
+            for name in gn.inputs(mod):
+                sock = gn._items(mod.node_group, "INPUT")[name]
+                if sock.socket_type in (
+                    "NodeSocketObject",
+                    "NodeSocketCollection",
+                    "NodeSocketMaterial",
+                ):
+                    continue
+                if name not in keys and f"{obj.name}/{name}" not in keys:
+                    out.append(f"{obj.name}/{name}")
+    return sorted(set(out))
 
 
 # --- units -----------------------------------------------------------------------
@@ -102,6 +142,22 @@ def grid(names: list[str] | None = None, gap: float = 0.25, axis: str = "X") -> 
     src = [o for o in scene.model().all_objects if o.type == "MESH"]
     if not src:
         raise RuntimeError("Model is empty")
+    # objects the parts read through GN object inputs (e.g. a Work rig) are copied too, so
+    # a variant's params on them reach that variant's parts
+    deps = []
+    for o in src:
+        for mod in gn.gn_modifiers(o):
+            for name, sock in gn._items(mod.node_group, "INPUT").items():
+                if sock.socket_type != "NodeSocketObject":
+                    continue
+                ref = gn._read(mod, sock.identifier)
+                if (
+                    ref is not None
+                    and ref not in src
+                    and ref not in deps
+                    and gn.gn_modifiers(ref)
+                ):
+                    deps.append(ref)
     dg = bpy.context.evaluated_depsgraph_get()
     corners = [
         o.matrix_world @ Vector(c) for o in src for c in o.evaluated_get(dg).bound_box
@@ -116,14 +172,27 @@ def grid(names: list[str] | None = None, gap: float = 0.25, axis: str = "X") -> 
     for k, name in enumerate(names):
         offset = Vector((0, 0, 0))
         offset[i] = k * step
-        copies = []
+        copies, remap = [], {}
+        for o in deps:  # unmoved: parts read them in ORIGINAL space
+            c = o.copy()
+            c.name = f"{name}:{o.name}"
+            coll.objects.link(c)
+            remap[o] = c
         for o in src:
             c = o.copy()
             c.name = f"{name}:{o.name}"
             c.location = o.location + offset
             coll.objects.link(c)
             copies.append(c)
-        res = apply(load(name), copies)
+        for c in copies:
+            for mod in gn.gn_modifiers(c):
+                for sname, sock in gn._items(mod.node_group, "INPUT").items():
+                    if (
+                        sock.socket_type == "NodeSocketObject"
+                        and gn._read(mod, sock.identifier) in remap
+                    ):
+                        gn.set_input(mod, sname, remap[gn._read(mod, sock.identifier)])
+        res = apply(load(name), [*remap.values(), *copies])
         label = bpy.data.objects.new(f"{name}:label", bpy.data.curves.new(name, "FONT"))
         label.data.body = name
         label.data.size = size * 0.08

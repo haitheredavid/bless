@@ -7,6 +7,7 @@
 - `just ci` - ruff check + format check + pytest.
 - `just fmt` - auto-fix lint and format.
 - `just open <m>` - open a model's `.blend` (MCP bridge auto-starts).
+- `just build <m> [--variant preview]` - rebuild headless from `builders/` and save model.blend; no MCP timeout. It fails on builder errors, GN inputs without a params key, and the model's `builders/checks.py`. Revert an open Blender afterwards (File > Revert).
 - `just check|export|render|views|turntable <m>` - headless runs against the saved file.
 - `just wrap <m>` - check, export, render.
 - `just site-export <m>`, `just site-dev`, `just site-build` - the Pages gallery (see `workflows/web-demo.md`).

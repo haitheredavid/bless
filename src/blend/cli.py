@@ -353,6 +353,54 @@ def _flag(o: dict) -> list[str]:
 
 
 @app.command()
+def build(
+    ref: ModelArg,
+    variant: Annotated[
+        str,
+        typer.Option(help="params.toml variant applied over [base] (e.g. preview)."),
+    ] = "base",
+    allow_fail: Annotated[
+        bool,
+        typer.Option(help="Save model.blend even if checks.py fails (to inspect it)."),
+    ] = False,
+) -> None:
+    """Rebuild the model headless from builders/ (build_all.py) and save model.blend.
+
+    No MCP timeout. Fails on builder errors, GN inputs without a params key, and the
+    model's builders/checks.py; model.blend is only saved when the build passes (or the
+    checks fail and --allow-fail is set)."""
+    s = _model(ref)
+    _need_blend(s)
+    if bridge.listening():
+        console.print(
+            "[yellow]a Blender is running: if it has this model open, save it first and "
+            "revert it (File > Revert) after the build, or the two copies diverge[/yellow]"
+        )
+    args = ["--variant", variant] + (["--allow-fail"] if allow_fail else [])
+    res = _run("build_model.py", blend=s.blend, args=args)
+    rep = res.get("report") or {}
+    for line in res.get(
+        "log", []
+    ):  # builder notes; skip build_all's own progress lines
+        if line and not line.startswith(("build_all:", "build_all ok", "checks:")):
+            console.print(f"[dim]{escape(line)}[/dim]")
+    for w in rep.get("warns", []):
+        console.print(f"[yellow]warn[/yellow] {escape(w)}")
+    for f in rep.get("fails", []):
+        console.print(f"[red]fail[/red] {escape(f)}")
+    if rep.get("report"):
+        console.print_json(json.dumps(rep["report"]))
+    if not res["ok"]:
+        console.print(
+            f"[red]build failed ({res['seconds']} s)[/red]\n{escape(res['error'])}"
+        )
+        raise typer.Exit(1)
+    console.print(
+        f"[green]built[/green] {s.name} ({res['variant']}) in {res['seconds']} s"
+    )
+
+
+@app.command()
 def check(
     ref: ModelArg,
     strict: Annotated[

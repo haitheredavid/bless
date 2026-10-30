@@ -63,6 +63,10 @@ session model name *flags:
 history model *flags:
     {{blend}} history "$@"
 
+# rebuild a model headless from builders/ and save it (--variant preview); fails on checks
+build model *flags:
+    {{blend}} build "$@"
+
 # --- outputs -------------------------------------------------------------------
 
 # mesh health of the Model collection (--strict also fails non-manifold/transforms)

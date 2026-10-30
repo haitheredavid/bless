@@ -40,7 +40,7 @@ def socket(name):
 t = gn.tree("GN_ArtDealers_Logo", reset=True)
 gn.input(t, "Geometry", "GEOMETRY")
 for panel_name, names in PANELS.items():
-    panel = t.interface.new_panel(panel_name)
+    panel = gn.panel(t, panel_name)
     for name in names:
         src = socket(name)
         kind = {
@@ -52,6 +52,7 @@ for panel_name, names in PANELS.items():
                         getattr(src, "max_value", None), getattr(src, "subtype", None), src.description)  # fmt: skip
         t.interface.move_to_parent(sock, panel, len(panel.interface_items))
 gn.output(t, "Geometry")
+gn.prune(t)
 gin, gout = gn.io(t)
 join = gn.node(t, "GeometryNodeJoinGeometry")
 for group in (BASE, FACE):

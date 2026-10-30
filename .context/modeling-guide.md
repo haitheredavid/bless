@@ -44,6 +44,9 @@ Conventions for how a model is built so it stays editable by hand and rebuildabl
 
 - `builders/NN_<part>.py`, run in order by `build_all.py`. They create node groups, Control defaults (if missing) and Model objects with modifiers.
 - Non-NN scripts (`explore.py`, `*_geo.py`) are helpers that `build_all` skips.
+- `build_all.py` (from the template) applies params after the builders, and fails if any GN value input has no params key: a rebuild resets uncovered inputs to their socket defaults.
+- `builders/checks.py` is optional. It runs last and raises on unmet requirements from the brief (fit, field of view, single closed pieces); warnings are for stages not built yet.
+- Build headless with `just build <m>` (no MCP timeout). Promote live steps into builders as soon as they work, not only at `/wrap`, so a rebuild never depends on scratch scripts.
 - When a helper proves reusable across models, move it to `lib/kit/` or `lib/patterns/`.
 
 ## Command line

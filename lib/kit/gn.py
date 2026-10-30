@@ -33,16 +33,46 @@ SOCKET_TYPES = {
 }
 
 
+_DECLARED: dict[
+    str, set[str]
+] = {}  # interface items declared since each tree's last reset
+
+
 def tree(name: str, reset: bool = False) -> bpy.types.GeometryNodeTree:
-    """Get or create a modifier node group. reset=True empties it for a clean rebuild."""
+    """Get or create a modifier node group. reset=True clears its nodes for a clean
+    rebuild but keeps the interface: inputs/outputs/panels are re-declared by name
+    (input/output/panel), so group nodes elsewhere stay linked and modifier input values
+    survive. Clearing the interface used to unlink every tree using the group and zero
+    modifier inputs not covered by params.toml. prune() drops items not re-declared."""
     t = bpy.data.node_groups.get(name)
     if t is None:
         t = bpy.data.node_groups.new(name, "GeometryNodeTree")
     elif reset:
         t.nodes.clear()
-        t.interface.clear()
+    if reset or name not in _DECLARED:
+        _DECLARED[name] = set()
     t.is_modifier = True
     return t
+
+
+def prune(t) -> list[str]:
+    """Remove interface items not declared since the last tree(reset=True): inputs a
+    builder no longer creates. Call at the end of a rebuild; returns the removed names."""
+    keep = _DECLARED.get(t.name, set())
+    gone = [i for i in t.interface.items_tree if i.name not in keep]
+    names = [i.name for i in gone]
+    for i in gone:
+        t.interface.remove(i)
+    return names
+
+
+def panel(t, name: str):
+    """Get or create an interface panel by name."""
+    _DECLARED.setdefault(t.name, set()).add(name)
+    for i in t.interface.items_tree:
+        if i.item_type == "PANEL" and i.name == name:
+            return i
+    return t.interface.new_panel(name)
 
 
 def current(t, source: str) -> bool:
@@ -80,8 +110,13 @@ def input(
     subtype: str | None = None,
     description: str = "",
 ):
-    """Get or create a group input socket by name; set default/min/max when given."""
+    """Get or create a group input socket by name; set default/min/max when given.
+    An existing socket of another type is replaced."""
+    _DECLARED.setdefault(t.name, set()).add(name)
     sock = _items(t, "INPUT").get(name)
+    if sock is not None and sock.socket_type != SOCKET_TYPES[kind]:
+        t.interface.remove(sock)
+        sock = None
     if sock is None:
         sock = t.interface.new_socket(
             name, in_out="INPUT", socket_type=SOCKET_TYPES[kind]
@@ -100,7 +135,11 @@ def input(
 
 
 def output(t, name: str = "Geometry", kind: str = "GEOMETRY"):
+    _DECLARED.setdefault(t.name, set()).add(name)
     sock = _items(t, "OUTPUT").get(name)
+    if sock is not None and sock.socket_type != SOCKET_TYPES[kind]:
+        t.interface.remove(sock)
+        sock = None
     if sock is None:
         sock = t.interface.new_socket(
             name, in_out="OUTPUT", socket_type=SOCKET_TYPES[kind]
