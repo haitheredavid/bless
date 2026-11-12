@@ -1,0 +1,283 @@
+{
+  "model": "witch-frame",
+  "sessions": [
+    {
+      "id": "2026-10-10-gn-rebuild",
+      "status": "closed",
+      "parent_node": "step-1"
+    },
+    {
+      "id": "2026-10-10-initial",
+      "status": "open"
+    },
+    {
+      "id": "2026-10-10-joinery",
+      "status": "closed",
+      "parent_node": "step-3"
+    },
+    {
+      "id": "2026-10-10-key-tolerances",
+      "status": "closed",
+      "parent_node": "step-4"
+    },
+    {
+      "id": "2026-10-11-ledge-support",
+      "status": "closed",
+      "parent_node": "step-11"
+    },
+    {
+      "id": "2026-10-11-print-joinery",
+      "status": "closed",
+      "parent_node": "step-8"
+    },
+    {
+      "id": "2026-10-16-design-feedback",
+      "status": "closed",
+      "parent_node": "step-12"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "step-1",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "first Speckle checkpoint after migration to models/ (bmesh ring-sweep build)",
+      "session": "2026-10-10-initial",
+      "version": 1,
+      "speckle_version": "23b410c176",
+      "size": 0.0,
+      "status": "applied",
+      "step": 1,
+      "snapshot": "models/witch-frame/out/variants/base.png"
+    },
+    {
+      "id": "step-2",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "rebuild Frame on GN_FrameLoft with Control outline; clip pockets as live booleans",
+      "session": "2026-10-10-gn-rebuild",
+      "version": 2,
+      "size": 0.2517,
+      "status": "applied",
+      "step": 2,
+      "snapshot": "models/witch-frame/out/variants/base.png"
+    },
+    {
+      "id": "step-3",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "base = first session's pick (centre of depth grid: 40 mm cove) + sharp tips, 15 mm bow, 3 mm wobble seed 3; wobble ported to GN",
+      "session": "2026-10-10-gn-rebuild",
+      "version": 3,
+      "speckle_version": "b8a0881e09",
+      "size": 0.255,
+      "status": "applied",
+      "step": 3,
+      "snapshot": "models/witch-frame/out/variants.png"
+    },
+    {
+      "id": "step-4",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "4 live GN_SectionPiece corner pieces + butterfly keys fitted to the back strip at each mid-side seam; Print collection; STL export",
+      "session": "2026-10-10-joinery",
+      "version": 4,
+      "size": 0.3913,
+      "status": "applied",
+      "step": 4,
+      "snapshot": "models/witch-frame/out/variants.png"
+    },
+    {
+      "id": "step-5",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "filleted bow-tie keys + true-offset 0.15 mm recesses; 0.4 mouth flare, 0.4 bed / 0.3 lead chamfers on keys; even gap verified 0.149-0.150",
+      "session": "2026-10-10-key-tolerances",
+      "version": 5,
+      "size": 0.2217,
+      "status": "applied",
+      "step": 5,
+      "snapshot": "models/witch-frame/out/turntable/f0001.png"
+    },
+    {
+      "id": "step-6",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "odd fillet segments so no recess vertex sits on the seam plane: clears 2 degenerate boolean faces (TL, BL)",
+      "session": "2026-10-10-key-tolerances",
+      "version": 6,
+      "size": 0.1334,
+      "status": "applied",
+      "step": 6,
+      "snapshot": "models/witch-frame/out/turntable/f0001.png"
+    },
+    {
+      "id": "step-7",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "butterfly keys -> glued loose tenons inside the seams, fitted to the seam profile with >=2 mm walls (N 4.2x8.2, S 6.0x8.4, E 3.4x8.3, W 3.8x8.2, 32 long); assembly closes x then y",
+      "session": "2026-10-10-key-tolerances",
+      "version": 7,
+      "size": 0.2243,
+      "status": "applied",
+      "step": 7,
+      "snapshot": "models/witch-frame/out/turntable/f0001.png"
+    },
+    {
+      "id": "step-8",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "assembly: tenons slide lengthwise into their rider piece (N/W->TL, S->BL, E->TR) instead of dropping, then ride with it while pieces close",
+      "session": "2026-10-10-key-tolerances",
+      "version": 8,
+      "speckle_version": "90e438930b",
+      "size": 0.0243,
+      "status": "applied",
+      "step": 8,
+      "snapshot": "models/witch-frame/out/turntable/f0001.png"
+    },
+    {
+      "id": "step-9",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "gable (45 deg) mortise roof + matching gable tenons, re-fit with WALL clear of apex (N 4.2x10.1, S 6.0x11.0, E 3.4x9.9, W 3.8x9.9 total); 0.4 back chamfer on every seam face; rebuilt via build_all",
+      "session": "2026-10-11-print-joinery",
+      "version": 9,
+      "size": 0.3043,
+      "status": "applied",
+      "step": 9,
+      "snapshot": "models/witch-frame/out/assembly/f0001.png"
+    },
+    {
+      "id": "step-10",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "tenon helpers -> builders/joinery.py; 45_coupon: E-seam clearance coupons (0.10/0.15/0.20, 1/2/3 notches) = two 20.5 mm offcuts trimmed at z 16.4 + Tenon_E copy each, in a Coupon collection at +X",
+      "session": "2026-10-11-print-joinery",
+      "version": 10,
+      "speckle_version": "f43af33a3c",
+      "size": 0.2578,
+      "status": "applied",
+      "step": 10,
+      "snapshot": "models/witch-frame/out/assembly/f0001.png"
+    },
+    {
+      "id": "step-11",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "TENON_CLEAR 0.15 -> 0.10 from P1S coupon (all 3 slide by hand, 1 notch best fit); tenons regrow N 4.3, E 3.5; check --strict clean; print pack regenerated",
+      "session": "2026-10-11-print-joinery",
+      "version": 11,
+      "speckle_version": "ed48d7e542",
+      "size": 0.0221,
+      "status": "applied",
+      "step": 11,
+      "snapshot": "models/witch-frame/render.png"
+    },
+    {
+      "id": "step-12",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "coupon round 2: only C10 (0.10), twice: Flat ledge (as frame, sliced w/ supports) + Chamfer (45 deg wedge fills rabbet corner under the 3.675 mm lip at z 9, self-supporting); manifold, no flat-down faces left on Chamfer",
+      "session": "2026-10-11-ledge-support",
+      "version": 12,
+      "speckle_version": "b4dd861d44",
+      "size": 0.1304,
+      "status": "applied",
+      "step": 12,
+      "snapshot": "models/witch-frame/render.png"
+    },
+    {
+      "id": "p-9122a9aa8ad4",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "Here is where we will start:\n\n- The joints were all different sizes which made it challenging to fit together.\n- We are missing some sort of bracing in the back for holding the picture in place\n- There were very thin parts near the joints which made the material very fragile and broke when I was putting it together\n- The material printed well and there was no weird pattersn on the surfaces\n- The design and from was nice\n- The joint in the middle of the frame was not a clean design, I would like for the joints to be at the edges and keep the pieces long (if possible on the bed we have)\n- The joint itself should be heavily improved. I would like for us to do some more research towards what types of joints we could utilize instead as it seems like joints that snap in with the tenon might be better for us. \n- We should optimize the beds to hold more of the printed pieces",
+      "session": "2026-10-16-design-feedback",
+      "version": 13,
+      "size": 1.0,
+      "status": "applied",
+      "step": 13
+    },
+    {
+      "id": "p-b6a1361f9c5a",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "ah, something else we forgot to add was a hook or a notch to allow for the frame to be hung",
+      "session": "2026-10-16-design-feedback",
+      "version": 14,
+      "size": 0.5652,
+      "status": "applied",
+      "step": 16
+    },
+    {
+      "id": "p-1809d217380c",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "I would like for the key hole to be centered on the top frame. Also, Im not convicned that the clips for keeping the back board in place will hold, are those glue only joints?",
+      "session": "2026-10-16-design-feedback",
+      "version": 15,
+      "size": 0.6522,
+      "status": "applied",
+      "current": true,
+      "step": 17
+    },
+    {
+      "id": "link-step-3",
+      "kind": "link",
+      "text": "next",
+      "from": "step-2",
+      "to": "step-3"
+    },
+    {
+      "id": "link-step-6",
+      "kind": "link",
+      "text": "next",
+      "from": "step-5",
+      "to": "step-6"
+    },
+    {
+      "id": "link-step-7",
+      "kind": "link",
+      "text": "next",
+      "from": "step-6",
+      "to": "step-7"
+    },
+    {
+      "id": "link-step-8",
+      "kind": "link",
+      "text": "next",
+      "from": "step-7",
+      "to": "step-8"
+    },
+    {
+      "id": "link-step-10",
+      "kind": "link",
+      "text": "next",
+      "from": "step-9",
+      "to": "step-10"
+    },
+    {
+      "id": "link-step-11",
+      "kind": "link",
+      "text": "next",
+      "from": "step-10",
+      "to": "step-11"
+    },
+    {
+      "id": "link-p-b6a1361f9c5a",
+      "kind": "link",
+      "text": "next",
+      "from": "p-9122a9aa8ad4",
+      "to": "p-b6a1361f9c5a"
+    },
+    {
+      "id": "link-p-1809d217380c",
+      "kind": "link",
+      "text": "next",
+      "from": "p-b6a1361f9c5a",
+      "to": "p-1809d217380c"
+    }
+  ],
+  "references": [],
+  "cameras": {}
+}

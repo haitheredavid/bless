@@ -1,0 +1,25 @@
+{
+  "model": "joinery-sampler",
+  "sessions": [
+    {
+      "id": "2026-10-17-dt-bk-foundation",
+      "status": "closed"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "p-b8ef9234a843",
+      "kind": "prompt",
+      "layer": "model",
+      "text": "go",
+      "session": "2026-10-17-dt-bk-foundation",
+      "version": 1,
+      "size": 1.0,
+      "status": "applied",
+      "current": true,
+      "step": 1
+    }
+  ],
+  "references": [],
+  "cameras": {}
+}

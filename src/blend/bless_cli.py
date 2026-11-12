@@ -5,13 +5,14 @@
 
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from blend import actions, commands
+from blend import actions, commands, graph
+from blend import model as models
 from blend.sessions import (
     bless_root,
     list_records,
@@ -35,12 +36,16 @@ param_app = typer.Typer(no_args_is_help=True, help="Set live model parameters.")
 actions_app = typer.Typer(
     no_args_is_help=True, help="List and run actions.yaml actions."
 )
+graph_app = typer.Typer(no_args_is_help=True, help="Import and build prompt graphs.")
+prompt_app = typer.Typer(no_args_is_help=True, help="Record and correct prompt data.")
 app.add_typer(session_app, name="session")
 app.add_typer(view_app, name="view")
 app.add_typer(display_app, name="display")
 app.add_typer(camera_app, name="camera")
 app.add_typer(param_app, name="param")
 app.add_typer(actions_app, name="actions")
+app.add_typer(graph_app, name="graph")
+app.add_typer(prompt_app, name="prompt")
 console = Console()
 SessionOption = Annotated[
     str | None, typer.Option("--session", help="Target <model>/<session>.")
@@ -50,6 +55,18 @@ SessionOption = Annotated[
 def _abort(exc: Exception):
     console.print(f"[red]{exc}[/red]")
     raise typer.Exit(1)
+
+
+def _models(ref: str | None, all_models: bool) -> list[models.Model]:
+    root = bless_root()
+    base = root / "models"
+    if all_models:
+        if ref:
+            raise ValueError("MODEL and --all are mutually exclusive")
+        return models.list_all(base)
+    if not ref:
+        raise ValueError("provide MODEL or --all")
+    return [models.resolve(ref, base)]
 
 
 @app.command()
@@ -308,6 +325,157 @@ def actions_run(
         values = actions.parse_args(action, args or [])
         result = actions.run_action(action_file, action_id, values, session)
         console.print_json(data=result)
+    except Exception as exc:
+        _abort(exc)
+
+
+@graph_app.command("import")
+def graph_import(
+    model: Annotated[str | None, typer.Argument(help="Model folder name.")] = None,
+    all_models: Annotated[
+        bool, typer.Option("--all", help="Import every model.")
+    ] = False,
+) -> None:
+    """Import new omp user prompts into committed log/prompts.jsonl records."""
+    try:
+        for item in _models(model, all_models):
+            records = graph.import_transcripts(item)
+            counts = {
+                layer: sum(r.layer == layer for r in records)
+                for layer in ("model", "scene")
+            }
+            console.print(
+                f"{item.name}: {len(records)} prompts "
+                f"({counts['model']} model, {counts['scene']} scene)"
+            )
+    except Exception as exc:
+        _abort(exc)
+
+
+@graph_app.command("build")
+def graph_build(
+    model: Annotated[str | None, typer.Argument(help="Model folder name.")] = None,
+    all_models: Annotated[
+        bool, typer.Option("--all", help="Build every model.")
+    ] = False,
+) -> None:
+    """Derive and strictly validate models/<model>/graph.json."""
+    try:
+        for item in _models(model, all_models):
+            built = graph.build_graph(item)
+            prompts = [
+                node for node in built.nodes if isinstance(node, graph.PromptNode)
+            ]
+            links = [node for node in built.nodes if isinstance(node, graph.LinkNode)]
+            console.print(
+                f"{item.name}: {len(prompts)} prompts, {len(links)} links, "
+                f"{len(built.references)} references, {len(built.cameras)} cameras"
+            )
+    except Exception as exc:
+        _abort(exc)
+
+
+def _prompt_target(selector: str) -> tuple[models.Model, str]:
+    try:
+        model_name, session = selector.split("/", 1)
+    except ValueError as exc:
+        raise ValueError("--session must be <model>/<session>") from exc
+    validate_session_name(session)
+    return models.resolve(model_name, bless_root() / "models"), session
+
+
+@prompt_app.command("add")
+def prompt_add(
+    session: Annotated[
+        str, typer.Option("--session", help="Target <model>/<session>.")
+    ],
+    layer: Annotated[Literal["model", "scene"], typer.Option("--layer")],
+    text: Annotated[str, typer.Option("--text")],
+) -> None:
+    """Record a new agent-tagged prompt before acting on it."""
+    try:
+        item, session_name = _prompt_target(session)
+        prompt = graph.add_prompt(item, session_name, layer, text)
+        graph.build_graph(item)
+        print(prompt.id)
+    except Exception as exc:
+        _abort(exc)
+
+
+@prompt_app.command("tag")
+def prompt_tag(model: str, prompt_id: str, layer: Literal["model", "scene"]) -> None:
+    """Correct a prompt layer; user provenance survives future imports."""
+    try:
+        item = models.resolve(model, bless_root() / "models")
+        prompt = graph.tag_prompt(item, prompt_id, layer)
+        graph.build_graph(item)
+        console.print_json(data=prompt.model_dump(exclude_none=True))
+    except Exception as exc:
+        _abort(exc)
+
+
+@prompt_app.command("split")
+def prompt_split(
+    model: str,
+    prompt_id: str,
+    model_text: Annotated[str, typer.Option("--model-text")],
+    scene_text: Annotated[str, typer.Option("--scene-text")],
+) -> None:
+    """Split a mixed prompt into model and scene nodes."""
+    try:
+        item = models.resolve(model, bless_root() / "models")
+        split = graph.split_prompt(item, prompt_id, model_text, scene_text)
+        graph.build_graph(item)
+        console.print_json(
+            data=[record.model_dump(exclude_none=True) for record in split]
+        )
+    except Exception as exc:
+        _abort(exc)
+
+
+@prompt_app.command("edit")
+def prompt_edit(
+    model: str,
+    prompt_id: str,
+    text: Annotated[str, typer.Option("--text")],
+) -> None:
+    """Edit prompt text and mark the source as user-owned."""
+    try:
+        item = models.resolve(model, bless_root() / "models")
+        prompt = graph.edit_prompt(item, prompt_id, text)
+        graph.build_graph(item)
+        console.print_json(data=prompt.model_dump(exclude_none=True))
+    except Exception as exc:
+        _abort(exc)
+
+
+@prompt_app.command("pin")
+def prompt_pin(model: str, scene_id: str, model_id: str) -> None:
+    """Pin a scene prompt to a specific model prompt."""
+    try:
+        item = models.resolve(model, bless_root() / "models")
+        prompt = graph.pin_prompt(item, scene_id, model_id)
+        graph.build_graph(item)
+        console.print_json(data=prompt.model_dump(exclude_none=True))
+    except Exception as exc:
+        _abort(exc)
+
+
+@app.command("replay")
+def replay_cmd(
+    target: str,
+    from_id: Annotated[
+        str | None, typer.Option("--from", help="Edited model prompt id.")
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Plan without Blender.")
+    ] = False,
+) -> None:
+    """Replay later model nodes and re-snapshot following scene nodes."""
+    try:
+        item, session = _prompt_target(target)
+        plan = graph.replay(item, session, from_id, dry_run)
+        console.print_json(data=plan.model_dump())
     except Exception as exc:
         _abort(exc)
 

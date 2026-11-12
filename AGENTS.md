@@ -21,7 +21,7 @@ Durable context lives in `.context/` (conventions in `.context/README.md`):
 | `src/blend/` | `blend` CLI (typer, host Python 3.13). |
 | `blender_scripts/` | Headless scripts run inside Blender; bpy only; write JSON to `--result`. |
 | `lib/kit/`, `lib/patterns/` | bpy helpers and GN pattern builders for builders and live MCP code. |
-| `models/<m>/` | `model.blend`, `model.toml`, `params.toml`, `builders/`, `log/`, `sessions/`, `exports/`, `print/` (handoff pack), `web/` (Pages GLBs), `render.png`, `out/` (gitignored). |
+| `models/<m>/` | `model.blend`, `model.toml`, `params.toml`, `builders/`, `log/` (including prompt source), `sessions/`, derived `graph.json`, `exports/`, `print/` (handoff pack), `web/` (Pages GLBs), `render.png`, `out/` (gitignored). |
 | `models/_template/` | Copied by `blend model new`. |
 | `workflows/` | Technique docs (`README.md` index, `_template.md`). |
 | `assets/` | `studio.blend` render studio; `patterns.blend` GN asset library. |
@@ -63,6 +63,7 @@ Run `just` to list recipes. Key ones: `just ci`, `just fmt`, `just open <m>`, `j
 - Z up, model on z=0, real-world size; metres by default, mm for precise work.
 - Control is user-owned and never cleared by builders; Model is procedural. Do not apply modifiers without saying so.
 - Small, idempotent MCP steps; `look` once per step; save before any `just` command.
+- Before acting on every user prompt, record it with `bless prompt add --session <model>/<session> --layer model|scene --text ...`. For a prompt that changes the model and the scene, add it once, then use `bless prompt split` with separate model and scene clauses. User layer corrections use `bless prompt tag` and must not be overwritten.
 - Find nodes by type, read enum identifiers, never hardcode `Socket_N`.
 - Read the relevant `workflows/*.md` before modeling; update them at `/wrap`.
 

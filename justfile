@@ -72,6 +72,14 @@ supervisor:
 status *flags:
     {{bless}} status "$@"
 
+# import omp prompts into committed model logs (MODEL or --all)
+graph-import *args:
+    {{bless}} graph import "$@"
+
+# derive strict graph.json files (MODEL or --all)
+graph-build *args:
+    {{bless}} graph build "$@"
+
 # --- outputs -------------------------------------------------------------------
 
 # mesh health of the Model collection (--strict also fails non-manifold/transforms)

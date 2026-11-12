@@ -17,6 +17,7 @@
 
 - **`src/blend/`**: host-side Python 3.13, typer CLI. It never imports bpy. It shells out to Blender through `blend.blender`.
 - **Bless runtime**: `blend.sessions` owns atomic `.bless/` records and ports, `blend.supervisor` owns GUI Blender processes, and `blend.commands` talks directly to each add-on socket. The separate `bless` console script leaves existing `blend` behavior unchanged.
+- **Prompt graph**: `models/<m>/log/prompts.jsonl` is committed source truth imported from disposable omp transcripts. `models/<m>/graph.json` is also committed: it is a deterministic, strict explorer artifact that works without access to those transcripts. `blend.graph` owns import, corrections, derivation, camera conversion and replay planning.
 - **`blender_scripts/`**: runs inside Blender as `blender -b file.blend -P script.py -- --result out.json ...`.
   - bpy/bmesh only; never import `blend`. They may import `lib/kit` and `lib/patterns` (bpy-only) by putting `lib/` on `sys.path`.
   - Each script takes `--result` and writes JSON there. `_common.py` holds the shared arg and collection helpers.
@@ -38,6 +39,15 @@
 
 - pytest in `tests/`. Cover config parsing, path logic, the step log, and anything host-side.
 - Tests never launch Blender. Blender-side behavior is verified live through MCP or by running the headless command by hand.
+
+## Prompt graph heuristics
+
+- A transcript prompt owns steps timestamped after it and before the next real user prompt in that transcript; explicit model/session mentions disambiguate overlapping transcripts.
+- A prompt with owned code or parameter steps is `model`. Otherwise scene vocabulary (camera, view, render, display, lighting) makes it `scene`; modeling vocabulary makes it a queued model prompt. Unacted chat with neither vocabulary nor steps is excluded, including operational requests such as commit, branch, CI, printing or deployment.
+- Each step not owned by a transcript prompt becomes its own `step-log` prompt, preserving every historical model version. A later transcript claim replaces an untouched fallback; agent/user-tagged fallbacks are retained with a warning.
+- Model-node size is `2 * unique objects + 1.5 * changed params + min(code bytes / 1000, 5)`, normalized to the largest score in that model.
+- Consecutive prompts in one session get a link using their leading connective phrase, or `next`. Scene references follow the latest prior applied model prompt unless pinned explicitly or by naming a version/step.
+- Snapshots are linked only when an existing PNG/JPEG is within 24 hours of the prompt (same session runtime snapshots first, then model outputs/render); stored paths are relative to the Bless root.
 
 ## Binaries and LFS
 
