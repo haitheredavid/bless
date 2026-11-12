@@ -7,6 +7,8 @@
 - `just ci` - ruff check + format check + pytest.
 - `just fmt` - auto-fix lint and format.
 - `just open <m>` - open a model's `.blend` (MCP bridge auto-starts).
+- `just supervisor` - supervise requested GUI Blender sessions; SIGINT/SIGTERM stops the supervisor but intentionally leaves healthy Blender processes running.
+- `just status` - read `.bless/sessions` without requiring the supervisor or Herdr.
 - `just check|export|render|views|turntable <m>` - headless runs against the saved file.
 - `just wrap <m>` - check, export, render.
 - `just site-export <m>`, `just site-dev`, `just site-build` - the Pages gallery (see `workflows/web-demo.md`).
@@ -14,6 +16,7 @@
 ## Code areas
 
 - **`src/blend/`**: host-side Python 3.13, typer CLI. It never imports bpy. It shells out to Blender through `blend.blender`.
+- **Bless runtime**: `blend.sessions` owns atomic `.bless/` records and ports, `blend.supervisor` owns GUI Blender processes, and `blend.commands` talks directly to each add-on socket. The separate `bless` console script leaves existing `blend` behavior unchanged.
 - **`blender_scripts/`**: runs inside Blender as `blender -b file.blend -P script.py -- --result out.json ...`.
   - bpy/bmesh only; never import `blend`. They may import `lib/kit` and `lib/patterns` (bpy-only) by putting `lib/` on `sys.path`.
   - Each script takes `--result` and writes JSON there. `_common.py` holds the shared arg and collection helpers.

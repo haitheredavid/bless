@@ -3,6 +3,7 @@ set dotenv-load := false
 set positional-arguments
 
 blend := "uv run blend"
+bless := "uv run bless"
 
 # list recipes
 default:
@@ -62,6 +63,14 @@ session model name *flags:
 # a model's step timeline (--last N)
 history model *flags:
     {{blend}} history "$@"
+
+# supervise requested Bless sessions in the foreground
+supervisor:
+    {{bless}} supervisor
+
+# show supervised Bless sessions (--json)
+status *flags:
+    {{bless}} status "$@"
 
 # --- outputs -------------------------------------------------------------------
 

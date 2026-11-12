@@ -11,12 +11,14 @@ dependencies = [
     "pillow>=12.3.0",
     "prompt-toolkit>=3.0.53",
     "pydantic-settings>=2.15.0",
+    "pyyaml>=6.0.3",
     "rich>=15.0.0",
     "typer>=0.27.3",
 ]
 
 [project.scripts]
 blend = "blend:main"
+bless = "blend.bless_cli:main"
 
 [build-system]
 requires = ["uv_build>=0.10.11,<0.11.0"]
@@ -33,3 +35,11 @@ dev = [
 [tool.ty.environment]
 # lib/ and blender_scripts/ go on sys.path at runtime (builders, headless scripts).
 extra-paths = ["lib", "blender_scripts"]
+
+[tool.ruff]
+# Step logs are immutable verbatim history; these workflow snippets are illustrative.
+extend-exclude = [
+    "models/*/log/*.py",
+    "workflows/gn-patterns.md",
+    "workflows/image-logo-relief.md",
+]

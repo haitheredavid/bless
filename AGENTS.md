@@ -56,7 +56,7 @@ Recommendations in `results.json` are bambi's only channel back: apply or declin
 
 ## Commands
 
-Run `just` to list recipes. Key ones: `just ci`, `just fmt`, `just open <m>`, `just session <m> <slug>`, `just history <m>`, `just check|export|render|views|variants|animate|turntable <m>`, `just print-pack|print-results <m>`, `just wrap <m>`. The full CLI is `uv run blend --help`.
+Run `just` to list recipes. Key ones: `just ci`, `just fmt`, `just open <m>`, `just session <m> <slug>`, `just history <m>`, `just check|export|render|views|variants|animate|turntable <m>`, `just print-pack|print-results <m>`, `just wrap <m>`. `just supervisor` runs the foreground multi-session supervisor and `just status` reads its durable records. The CLIs are `uv run blend --help` and `uv run bless --help`.
 
 ## Standards
 

@@ -1,0 +1,65 @@
+# Bless action file. The Herdr panel renders these; agents call the same ids as tools.
+# kind: direct = straight to the runtime, agent = prompt to the session agent, workflow = chain
+# scope: global (any backend), blender, threejs, or model:<name>
+
+- id: view.set
+  title: View
+  scope: global
+  kind: direct
+  inputs:
+    view: { type: enum, values: [front, side, top, iso] }
+
+- id: display.set
+  title: Display
+  scope: global
+  kind: direct
+  inputs:
+    mode: { type: enum, values: [wire, solid, material, render] }
+
+- id: camera.restore
+  title: Go to thread view
+  scope: global
+  kind: direct
+  inputs:
+    thread: { type: thread }
+
+- id: snapshot
+  title: Snapshot
+  scope: global
+  kind: direct
+  inputs:
+    camera: { type: camera, optional: true }
+
+- id: param.set
+  title: Parameter
+  scope: global
+  kind: direct
+  inputs:
+    name: { type: param }
+    value: { type: number }
+
+- id: mesh.check
+  title: Check mesh
+  scope: blender
+  kind: direct
+
+- id: print.pack
+  title: Print pack
+  scope: blender
+  kind: direct
+
+- id: step.next
+  title: Next modeling step
+  scope: global
+  kind: agent
+  inputs:
+    prompt: { type: text }
+
+- id: review.pass
+  title: Review pass
+  scope: global
+  kind: workflow
+  steps:
+    - { action: view.set, with: { view: iso } }
+    - { action: mesh.check, stop_on_fail: true }
+    - { action: snapshot }

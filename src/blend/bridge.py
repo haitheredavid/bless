@@ -35,9 +35,16 @@ def wait_listening(port: int = PORT, seconds: float = 90.0) -> bool:
 
 
 class Bridge:
-    def __init__(self, port: int = PORT, host: str = "localhost", timeout: float = 600):
+    def __init__(
+        self,
+        port: int = PORT,
+        host: str = "localhost",
+        timeout: float = 600,
+        connect_timeout: float = 5,
+    ):
         self.addr = (host, port)
         self.timeout = timeout
+        self.connect_timeout = connect_timeout
         self.sock: socket.socket | None = None
 
     def close(self) -> None:
@@ -49,7 +56,9 @@ class Bridge:
         """Run one add-on command and return its result; BridgeError on failure."""
         if self.sock is None:
             try:
-                self.sock = socket.create_connection(self.addr, timeout=5)
+                self.sock = socket.create_connection(
+                    self.addr, timeout=self.connect_timeout
+                )
             except OSError as e:
                 raise BridgeError(f"no Blender on port {self.addr[1]}: {e}") from e
             self.sock.settimeout(self.timeout)
@@ -64,9 +73,12 @@ class Bridge:
         return reply.get("result", {})
 
     def _read(self) -> dict:
+        if self.sock is None:
+            raise BridgeError("Blender socket is not connected")
+        sock = self.sock
         buf = b""
         while True:
-            chunk = self.sock.recv(65536)
+            chunk = sock.recv(65536)
             if not chunk:
                 raise BridgeError("Blender closed the connection")
             buf += chunk

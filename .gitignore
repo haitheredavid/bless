@@ -26,3 +26,4 @@ refs/
 
 # pages site (site/.gitignore has the rest)
 node_modules/
+.bless/
