@@ -11,7 +11,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from blend import actions, commands, graph
+from blend import actions, commands, graph, interaction
 from blend import model as models
 from blend.sessions import (
     bless_root,
@@ -38,6 +38,12 @@ actions_app = typer.Typer(
 )
 graph_app = typer.Typer(no_args_is_help=True, help="Import and build prompt graphs.")
 prompt_app = typer.Typer(no_args_is_help=True, help="Record and correct prompt data.")
+pin_app = typer.Typer(
+    no_args_is_help=True, help="Store anchored model discussion pins."
+)
+lasso_app = typer.Typer(
+    no_args_is_help=True, help="Preview and apply screen-space selections."
+)
 app.add_typer(session_app, name="session")
 app.add_typer(view_app, name="view")
 app.add_typer(display_app, name="display")
@@ -46,6 +52,8 @@ app.add_typer(param_app, name="param")
 app.add_typer(actions_app, name="actions")
 app.add_typer(graph_app, name="graph")
 app.add_typer(prompt_app, name="prompt")
+app.add_typer(pin_app, name="pin")
+app.add_typer(lasso_app, name="lasso")
 console = Console()
 SessionOption = Annotated[
     str | None, typer.Option("--session", help="Target <model>/<session>.")
@@ -54,6 +62,11 @@ SessionOption = Annotated[
 
 def _abort(exc: Exception):
     console.print(f"[red]{exc}[/red]")
+    raise typer.Exit(1)
+
+
+def _json_abort(exc: Exception):
+    print(json.dumps({"error": str(exc)}))
     raise typer.Exit(1)
 
 
@@ -122,6 +135,21 @@ def session_stop(model: str, session: str) -> None:
     try:
         record = read_record(model, session)
         record.desired = "stopped"
+        write_record(record)
+        console.print(record_path(model, session))
+    except Exception as exc:
+        _abort(exc)
+
+
+@session_app.command("restart")
+def session_restart(model: str, session: str) -> None:
+    """Ask the supervisor to terminate and relaunch a runtime."""
+    try:
+        record = read_record(model, session)
+        if record.desired != "running":
+            raise RuntimeError(f"session {model}/{session} is stopped")
+        record.status = "restarting"
+        record.last_error = "restart requested"
         write_record(record)
         console.print(record_path(model, session))
     except Exception as exc:
@@ -208,6 +236,25 @@ def camera_restore(thread_id: str, session: SessionOption = None) -> None:
         _abort(exc)
 
 
+@camera_app.command("ls")
+def camera_list(
+    model: str,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """List saved thread camera records."""
+    try:
+        records = commands.camera_list(model)
+        if as_json:
+            print(json.dumps(records))
+        else:
+            for record in records:
+                console.print(record["thread"])
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
 @app.command()
 def snapshot(
     camera: Annotated[
@@ -219,6 +266,192 @@ def snapshot(
     try:
         print(commands.snapshot(camera, session))
     except Exception as exc:
+        _abort(exc)
+
+
+@app.command()
+def state(
+    model: str,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """Return the complete Herdr-facing state for one model."""
+    try:
+        root = bless_root()
+        models.resolve(model, root / "models")
+        payload = {
+            "model": model,
+            "root": str(root),
+            "sessions": [
+                record.model_dump(by_alias=True)
+                for record in list_records(root)
+                if record.model == model
+            ],
+            "latest_snapshot": interaction.latest_sidecar(root, model),
+            "pins": interaction.load_pins(root, model),
+            "cameras": interaction.camera_records(root, model),
+        }
+        if as_json:
+            print(json.dumps(payload))
+        else:
+            console.print_json(data=payload)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
+def _parse_uv(value: str) -> tuple[float, float]:
+    try:
+        u, v = (float(part) for part in value.split(",", 1))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("--uv must be <u>,<v>") from exc
+    return u, v
+
+
+@pin_app.command("add")
+def pin_add(
+    session: Annotated[
+        str, typer.Option("--session", help="Target <model>/<session>.")
+    ],
+    uv: Annotated[str, typer.Option("--uv", help="Normalized top-left u,v.")],
+    thread: Annotated[str, typer.Option("--thread")],
+    note: Annotated[str | None, typer.Option("--note")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """Raycast a snapshot coordinate and save an anchored pin."""
+    try:
+        pin = commands.pin_add(session, _parse_uv(uv), thread, note)
+        if as_json:
+            print(json.dumps(pin))
+        else:
+            console.print_json(data=pin)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
+@pin_app.command("ls")
+def pin_list(
+    model: str,
+    snapshot: Annotated[Path | None, typer.Option("--snapshot")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """List pins, optionally projected onto a snapshot."""
+    try:
+        pins = interaction.pins_with_uv(bless_root(), model, snapshot)
+        if as_json:
+            print(json.dumps(pins))
+        else:
+            console.print_json(data=pins)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
+@pin_app.command("rm")
+def pin_remove(model: str, pin_id: str) -> None:
+    """Delete a stored pin."""
+    try:
+        interaction.remove_pin(bless_root(), model, pin_id)
+    except Exception as exc:
+        _abort(exc)
+
+
+@lasso_app.command("preview")
+def lasso_preview(
+    session: Annotated[
+        str, typer.Option("--session", help="Target <model>/<session>.")
+    ],
+    polygon: Annotated[str, typer.Option("--polygon")],
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """Highlight Model geometry inside a snapshot-space polygon."""
+    try:
+        result = commands.lasso_preview(session, interaction.parse_polygon(polygon))
+        if as_json:
+            print(json.dumps(result))
+        else:
+            console.print_json(data=result)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
+@lasso_app.command("apply")
+def lasso_apply(
+    session: Annotated[
+        str, typer.Option("--session", help="Target <model>/<session>.")
+    ],
+    prompt: Annotated[str, typer.Option("--prompt")],
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """Record a model prompt with the active lasso selection."""
+    try:
+        item, session_name = _prompt_target(session)
+        path = interaction.lasso_path(bless_root(), item.name, session_name)
+        if not path.is_file():
+            raise RuntimeError(f"no lasso preview for {session}")
+        state = json.loads(path.read_text())
+        record = graph.add_prompt(
+            item,
+            session_name,
+            "model",
+            prompt,
+            selection={"objects": state["objects"], "faces": state["faces"]},
+        )
+        graph.build_graph(item)
+        commands.lasso_discard(session)
+        result = {"prompt_id": record.id, "text": record.text}
+        if as_json:
+            print(json.dumps(result))
+        else:
+            console.print_json(data=result)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
+@lasso_app.command("discard")
+def lasso_discard(
+    session: Annotated[
+        str, typer.Option("--session", help="Target <model>/<session>.")
+    ],
+) -> None:
+    """Clear the lasso highlight and preview state."""
+    try:
+        commands.lasso_discard(session)
+    except Exception as exc:
+        _abort(exc)
+
+
+@app.command()
+def compare(
+    model: str,
+    camera: Annotated[str, typer.Option("--camera")],
+    versions: Annotated[str | None, typer.Option("--versions")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """Select two camera-matched snapshots for ghost comparison."""
+    try:
+        pair = None
+        if versions:
+            try:
+                a, b = (int(part) for part in versions.split(",", 1))
+                pair = (a, b)
+            except ValueError as exc:
+                raise ValueError("--versions must be <a>,<b>") from exc
+        result = interaction.compare_sidecars(bless_root(), model, camera, pair)
+        if as_json:
+            print(json.dumps(result))
+        else:
+            console.print_json(data=result)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
         _abort(exc)
 
 

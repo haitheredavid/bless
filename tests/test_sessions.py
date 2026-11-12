@@ -12,6 +12,7 @@ from blend.sessions import (
     write_mcp_config,
     write_record,
 )
+from blend.supervisor import Supervisor
 
 
 def record(
@@ -80,6 +81,37 @@ def test_allocate_port_ignores_stopped_record(tmp_path: Path) -> None:
 def test_allocate_port_exhaustion() -> None:
     with pytest.raises(RuntimeError, match="no free Bless port"):
         allocate_port([], lambda _port: True, first=9900, last=9901)
+
+
+def test_supervisor_honors_explicit_restart(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from blend import supervisor as supervisor_module
+
+    item = record(tmp_path)
+    item.pid = 123
+    item.port = 9877
+    item.status = "restarting"
+    item.last_error = "restart requested"
+    terminated = []
+    launched = []
+    monkeypatch.setattr(supervisor_module, "process_alive", lambda _pid: True)
+    monkeypatch.setattr(
+        supervisor_module, "terminate", lambda pid: terminated.append(pid)
+    )
+    instance = Supervisor(tmp_path)
+    monkeypatch.setattr(
+        instance,
+        "_launch",
+        lambda target, records: launched.append((target.pid, records)),
+    )
+
+    instance._tick_record(item, [item])
+
+    assert terminated == [123]
+    assert launched == [(None, [item])]
+    assert item.restarts == 1
+    assert item.last_error is None
 
 
 def test_mcp_config_contract(tmp_path: Path) -> None:

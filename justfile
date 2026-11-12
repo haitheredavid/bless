@@ -72,6 +72,14 @@ supervisor:
 status *flags:
     {{bless}} status "$@"
 
+# show Herdr-facing state for one model (--json)
+state model *flags:
+    {{bless}} state "$@"
+
+# select two camera-matched snapshots (--camera THREAD [--versions A,B] --json)
+compare model *flags:
+    {{bless}} compare "$@"
+
 # import omp prompts into committed model logs (MODEL or --all)
 graph-import *args:
     {{bless}} graph import "$@"

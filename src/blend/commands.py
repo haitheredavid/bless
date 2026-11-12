@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from blend import interaction
 from blend.bridge import Bridge
 from blend.model import Model
 from blend.sessions import SessionRecord, bless_root, list_records, write_record
@@ -308,6 +309,42 @@ def snapshot(
             client.close()
     if not path.is_file():
         raise RuntimeError(f"Blender did not write snapshot: {result}")
+    view = result.get("view") or _execute_json(
+        target,
+        VIEWPORT
+        + """
+import json
+print('BLESS_JSON:' + json.dumps({
+    'view_matrix': [list(row) for row in r3d.view_matrix],
+    'window_matrix': [list(row) for row in r3d.window_matrix],
+    'width': area.width,
+    'height': area.height,
+}))
+""",
+    )
+    perspective = _execute_json(
+        target,
+        VIEWPORT
+        + """
+import json
+print('BLESS_JSON:' + json.dumps({'is_perspective': bool(r3d.is_perspective)}))
+""",
+    )
+    sidecar = {
+        "schema": 1,
+        "model": target.record.model,
+        "session": target.record.session,
+        "path": str(path.resolve()),
+        "width": int(result.get("width", view["width"])),
+        "height": int(result.get("height", view["height"])),
+        "view_matrix": view["view_matrix"],
+        "projection_matrix": view["window_matrix"],
+        "is_perspective": perspective["is_perspective"],
+        "camera": camera.removeprefix("camera:") if camera else None,
+        "version": interaction.current_version(target.root, target.record.model),
+        "created_at": interaction.iso_now(),
+    }
+    interaction.write_sidecar(path.resolve(), sidecar)
     record = next(
         r
         for r in list_records(target.root)
@@ -316,6 +353,150 @@ def snapshot(
     record.last_snapshot = str(path.resolve())
     write_record(record, target.root)
     return path.resolve()
+
+
+def camera_list(model: str, root: Path | None = None) -> list[dict]:
+    return interaction.camera_records((root or bless_root()).resolve(), model)
+
+
+def pin_add(
+    selector: str,
+    uv: tuple[float, float],
+    thread: str,
+    note: str | None = None,
+    root: Path | None = None,
+) -> dict:
+    target = resolve_target(selector, root)
+    sidecar = interaction.latest_sidecar(
+        target.root, target.record.model, target.record.session
+    )
+    if sidecar is None:
+        raise RuntimeError(f"no snapshot for {selector}")
+    origin, direction = interaction.unproject_ray(sidecar, *uv)
+    code = f"""
+import json
+from mathutils import Vector
+depsgraph = bpy.context.evaluated_depsgraph_get()
+hit, location, normal, face, obj, matrix = bpy.context.scene.ray_cast(
+    depsgraph, Vector({origin!r}), Vector({direction!r}))
+print('BLESS_JSON:' + json.dumps({{'hit': hit, 'location': list(location) if hit else None}}))
+"""
+    hit = _execute_json(target, code)
+    if not hit["hit"]:
+        raise RuntimeError(f"ray from {uv[0]},{uv[1]} missed the scene")
+    camera_save(thread, selector, target.root)
+    return interaction.add_pin(
+        target.root,
+        target.record.model,
+        target.record.session,
+        thread,
+        hit["location"],
+        note,
+    )
+
+
+def _lasso_clear(target: Target) -> None:
+    _execute_json(
+        target,
+        """
+import json
+if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+    bpy.ops.object.mode_set(mode='OBJECT')
+bpy.ops.object.select_all(action='DESELECT')
+print('BLESS_JSON:' + json.dumps({'cleared': True}))
+""",
+    )
+
+
+def lasso_preview(
+    selector: str, polygon: list[tuple[float, float]], root: Path | None = None
+) -> dict:
+    target = resolve_target(selector, root)
+    sidecar = interaction.latest_sidecar(
+        target.root, target.record.model, target.record.session
+    )
+    if sidecar is None:
+        raise RuntimeError(f"no snapshot for {selector}")
+    code = f"""
+import json
+from mathutils import Matrix
+view = Matrix({sidecar["view_matrix"]!r})
+projection = Matrix({sidecar["projection_matrix"]!r})
+polygon = {polygon!r}
+def inside(point):
+    x, y = point
+    result = False
+    previous = polygon[-1]
+    for current in polygon:
+        x1, y1 = previous
+        x2, y2 = current
+        if (y1 > y) != (y2 > y) and x < (x2-x1)*(y-y1)/(y2-y1)+x1:
+            result = not result
+        previous = current
+    return result
+def screen(point):
+    clip = projection @ view @ point.to_4d()
+    if clip.w <= 1e-9:
+        return None
+    return ((clip.x/clip.w+1)/2, (1-clip.y/clip.w)/2)
+bpy.ops.object.select_all(action='DESELECT')
+collection = bpy.data.collections.get('Model')
+objects = []
+faces = 0
+depsgraph = bpy.context.evaluated_depsgraph_get()
+for obj in collection.all_objects if collection else []:
+    if obj.type != 'MESH':
+        continue
+    evaluated = obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        projected = [screen(obj.matrix_world @ vertex.co) for vertex in mesh.vertices]
+        selected_faces = sum(
+            inside(screen(obj.matrix_world @ polygon.center))
+            or any(projected[index] is not None and inside(projected[index]) for index in polygon.vertices)
+            for polygon in mesh.polygons
+            if screen(obj.matrix_world @ polygon.center) is not None
+        )
+        selected = selected_faces > 0 or any(point is not None and inside(point) for point in projected)
+        if selected:
+            obj.select_set(True)
+            objects.append(obj.name)
+            faces += selected_faces
+    finally:
+        evaluated.to_mesh_clear()
+if objects:
+    bpy.context.view_layer.objects.active = bpy.data.objects.get(objects[0])
+print('BLESS_JSON:' + json.dumps({{'objects': objects, 'faces': faces}}))
+"""
+    selected = _execute_json(target, code)
+    preview_path = snapshot(None, selector, target.root)
+    state = {
+        "lasso_id": f"lasso-{interaction.iso_now().replace(':', '').replace('+', '-')}",
+        "model": target.record.model,
+        "session": target.record.session,
+        "polygon": polygon,
+        "objects": selected["objects"],
+        "faces": selected["faces"],
+        "preview": str(preview_path),
+    }
+    interaction.atomic_json(
+        interaction.lasso_path(target.root, target.record.model, target.record.session),
+        state,
+    )
+    return {
+        "lasso_id": state["lasso_id"],
+        "objects": state["objects"],
+        "faces": state["faces"],
+        "preview": interaction.read_sidecar(preview_path),
+    }
+
+
+def lasso_discard(selector: str, root: Path | None = None) -> None:
+    target = resolve_target(selector, root)
+    _lasso_clear(target)
+    interaction.lasso_path(
+        target.root, target.record.model, target.record.session
+    ).unlink(missing_ok=True)
 
 
 def _coerce_value(raw: str, current):

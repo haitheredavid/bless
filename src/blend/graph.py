@@ -82,6 +82,7 @@ class PromptRecord(BaseModel):
     snapshot: str | None = None
     split_from: str | None = None
     pinned_model: str | None = None
+    selection: dict | None = None
 
 
 class PromptNode(BaseModel):
@@ -809,6 +810,7 @@ def add_prompt(
     layer: Literal["model", "scene"],
     text: str,
     now: str | None = None,
+    selection: dict | None = None,
 ) -> PromptRecord:
     if not text.strip():
         raise ValueError("prompt text cannot be empty")
@@ -824,6 +826,7 @@ def add_prompt(
         status="queued",
         provenance="agent",
         origin="agent",
+        selection=selection,
     )
     if any(record.id == prompt.id for record in records):
         raise ValueError(f"prompt id collision: {prompt.id}")

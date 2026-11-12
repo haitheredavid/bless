@@ -146,6 +146,18 @@ class Supervisor:
 
         if record.status == "failed":
             return
+        if (
+            alive
+            and record.status == "restarting"
+            and record.last_error == "restart requested"
+        ):
+            terminate(record.pid)
+            record.pid = None
+            record.restarts += 1
+            record.last_error = None
+            self.ping_failures[key] = 0
+            self._launch(record, records)
+            return
         if not alive:
             if record.pid is None and record.status == "starting":
                 self.fast_failures.pop(key, None)
