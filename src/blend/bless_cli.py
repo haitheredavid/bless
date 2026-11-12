@@ -20,6 +20,7 @@ from blend.sessions import (
     new_record,
     read_record,
     record_path,
+    update_agent_fields,
     validate_session_name,
     write_record,
 )
@@ -156,12 +157,46 @@ def session_restart(model: str, session: str) -> None:
         _abort(exc)
 
 
+@session_app.command("attach")
+def session_attach(
+    model: str,
+    session: str,
+    pane: Annotated[str, typer.Option("--pane", help="Herdr agent pane address.")],
+) -> None:
+    """Remember which Herdr pane runs the agent for a session."""
+    try:
+        update_agent_fields(model, session, agent_pane=pane)
+        console.print(record_path(model, session))
+    except Exception as exc:
+        _abort(exc)
+
+
+@session_app.command("attention")
+def session_attention(
+    model: str,
+    session: str,
+    set_text: Annotated[
+        str | None, typer.Option("--set", help="Attention text for the Stage.")
+    ] = None,
+    clear: Annotated[bool, typer.Option("--clear", help="Clear attention.")] = False,
+) -> None:
+    """Set or clear the session's attention flag."""
+    try:
+        if clear == (set_text is not None):
+            raise ValueError("give exactly one of --set or --clear")
+        update_agent_fields(model, session, attention=set_text, clear_attention=clear)
+        console.print(record_path(model, session))
+    except Exception as exc:
+        _abort(exc)
+
+
 @app.command()
 def status(
     as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
 ) -> None:
     """Show all session records without requiring the supervisor or Herdr."""
     try:
+        root = bless_root()
         rows = [
             {
                 "model": record.model,
@@ -171,8 +206,11 @@ def status(
                 "pid": record.pid,
                 "last_ping_at": record.last_ping_at,
                 "last_snapshot": record.last_snapshot,
+                "agent_pane": record.agent_pane,
+                "attention": record.attention,
+                "last_prompt": _last_prompt(record.model, record.session, root),
             }
-            for record in list_records()
+            for record in list_records(root)
         ]
         if as_json:
             print(json.dumps(rows, indent=2))
@@ -182,11 +220,23 @@ def status(
         )
         for row in rows:
             table.add_row(
-                *(str(row[key]) if row[key] is not None else "-" for key in row)
+                *(
+                    str(row[key]) if row[key] is not None else "-"
+                    for key in list(row)[:7]
+                )
             )
         console.print(table)
     except Exception as exc:
         _abort(exc)
+
+
+def _last_prompt(model: str, session: str, root: Path) -> dict[str, str] | None:
+    """Latest prompt of a session; null when the model or its log is unavailable."""
+    try:
+        item = models.resolve(model, root / "models")
+    except (LookupError, ValueError, FileNotFoundError):
+        return None
+    return graph.last_prompt(item, session)
 
 
 @app.command("mcp-config")
@@ -261,10 +311,19 @@ def snapshot(
         str | None, typer.Option(help="Restore this camera/thread first.")
     ] = None,
     session: SessionOption = None,
+    prompt: Annotated[
+        str | None,
+        typer.Option("--prompt", help="Bind the snapshot to this prompt id."),
+    ] = None,
 ) -> None:
     """Capture a unique viewport PNG and update the session record."""
     try:
-        print(commands.snapshot(camera, session))
+        path = commands.snapshot(camera, session, prompt_id=prompt)
+        if prompt:
+            target = commands.resolve_target(session)
+            graph.bind_snapshot(target.model, prompt)
+            graph.build_graph(target.model)
+        print(path)
     except Exception as exc:
         _abort(exc)
 
@@ -273,11 +332,15 @@ def snapshot(
 def state(
     model: str,
     as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+    with_graph: Annotated[
+        bool,
+        typer.Option("--graph", help="With --json: also rebuild and embed graph.json."),
+    ] = False,
 ) -> None:
     """Return the complete Herdr-facing state for one model."""
     try:
         root = bless_root()
-        models.resolve(model, root / "models")
+        item = models.resolve(model, root / "models")
         payload = {
             "model": model,
             "root": str(root),
@@ -290,6 +353,16 @@ def state(
             "pins": interaction.load_pins(root, model),
             "cameras": interaction.camera_records(root, model),
         }
+        if with_graph:
+            if not as_json:
+                raise ValueError("--graph requires --json")
+            graph.build_graph(item, root)
+            payload = {
+                "state": payload,
+                "graph": json.loads(graph.graph_path(item).read_text()),
+                "cameras": payload["cameras"],
+                "pins": payload["pins"],
+            }
         if as_json:
             print(json.dumps(payload))
         else:
@@ -624,14 +697,73 @@ def prompt_add(
     ],
     layer: Annotated[Literal["model", "scene"], typer.Option("--layer")],
     text: Annotated[str, typer.Option("--text")],
+    camera: Annotated[
+        str | None,
+        typer.Option("--camera", help="Camera thread (default: the session's)."),
+    ] = None,
+    parent: Annotated[
+        str | None, typer.Option("--parent", help="Parent prompt id.")
+    ] = None,
+    selection: Annotated[
+        str | None, typer.Option("--selection", help="Selection as a JSON object.")
+    ] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
 ) -> None:
     """Record a new agent-tagged prompt before acting on it."""
     try:
         item, session_name = _prompt_target(session)
-        prompt = graph.add_prompt(item, session_name, layer, text)
+        parsed = json.loads(selection) if selection else None
+        if parsed is not None and not isinstance(parsed, dict):
+            raise ValueError("--selection must be a JSON object")
+        thread = camera or interaction.session_camera(
+            bless_root(), item.name, session_name
+        )
+        prompt = graph.add_prompt(
+            item,
+            session_name,
+            layer,
+            text,
+            selection=parsed,
+            camera=thread,
+            parent=parent,
+        )
         graph.build_graph(item)
-        print(prompt.id)
+        if as_json:
+            print(json.dumps({"id": prompt.id, "status": prompt.status}))
+        else:
+            print(prompt.id)
     except Exception as exc:
+        if as_json:
+            _json_abort(exc)
+        _abort(exc)
+
+
+@prompt_app.command("claim")
+def prompt_claim(
+    prompt_id: str,
+    session: Annotated[
+        str, typer.Option("--session", help="Target <model>/<session>.")
+    ],
+    layer: Annotated[Literal["model", "scene"], typer.Option("--layer")],
+    link: Annotated[
+        str | None, typer.Option("--link", help="Scene link word (e.g. follows).")
+    ] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print JSON.")] = False,
+) -> None:
+    """Adopt a Stage-recorded `[bless p-…]` prompt instead of adding a new one."""
+    try:
+        item, session_name = _prompt_target(session)
+        prompt = graph.claim_prompt(item, prompt_id, session_name, layer, link)
+        graph.build_graph(item)
+        prompt = graph.get_prompt(item, prompt_id)
+        data = prompt.model_dump(exclude_none=True)
+        if as_json:
+            print(json.dumps(data))
+        else:
+            console.print_json(data=data)
+    except Exception as exc:
+        if as_json:
+            _json_abort(exc)
         _abort(exc)
 
 

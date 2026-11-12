@@ -274,7 +274,10 @@ print('BLESS_JSON:' + json.dumps({{'camera': {thread_id!r}, 'params': len(applie
 
 
 def snapshot(
-    camera: str | None = None, selector: str | None = None, root: Path | None = None
+    camera: str | None = None,
+    selector: str | None = None,
+    root: Path | None = None,
+    prompt_id: str | None = None,
 ) -> Path:
     target = resolve_target(selector, root)
     if camera:
@@ -342,6 +345,7 @@ print('BLESS_JSON:' + json.dumps({'is_perspective': bool(r3d.is_perspective)}))
         "is_perspective": perspective["is_perspective"],
         "camera": camera.removeprefix("camera:") if camera else None,
         "version": interaction.current_version(target.root, target.record.model),
+        "prompt_id": prompt_id,
         "created_at": interaction.iso_now(),
     }
     interaction.write_sidecar(path.resolve(), sidecar)

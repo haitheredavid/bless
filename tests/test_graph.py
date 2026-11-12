@@ -284,6 +284,9 @@ def test_build_versions_shape_snapshot_and_pin(tmp_path: Path) -> None:
             "snapshot",
             "from",
             "to",
+            "provenance",
+            "parent",
+            "snapshot_inferred",
         }
         for node in payload["nodes"]
     )

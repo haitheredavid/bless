@@ -15,6 +15,7 @@ from blend.sessions import (
     bless_root,
     list_records,
     now_iso,
+    read_record,
     write_mcp_config,
     write_record,
 )
@@ -92,6 +93,17 @@ class Supervisor:
         with os.fdopen(fd, "w") as stream:
             stream.write(f"{os.getpid()}\n")
 
+    def _write(self, record: SessionRecord) -> None:
+        """Persist runtime fields without clobbering UI-owned agent_pane/attention."""
+        try:
+            fresh = read_record(record.model, record.session, self.root)
+        except (FileNotFoundError, ValueError):
+            pass
+        else:
+            record.agent_pane = fresh.agent_pane
+            record.attention = fresh.attention
+        write_record(record, self.root)
+
     def _release(self) -> None:
         try:
             if int(self.pid_path.read_text().strip()) == os.getpid():
@@ -127,7 +139,7 @@ class Supervisor:
             except Exception as exc:  # noqa: BLE001 - isolate one bad record
                 record.last_error = str(exc)
                 record.status = "failed"
-                write_record(record, self.root)
+                self._write(record)
 
     def _tick_record(self, record: SessionRecord, records: list[SessionRecord]) -> None:
         key = (record.model, record.session)
@@ -139,7 +151,7 @@ class Supervisor:
             record.port = None
             record.status = "stopped"
             record.last_error = None
-            write_record(record, self.root)
+            self._write(record)
             self.ping_failures.pop(key, None)
             self.fast_failures.pop(key, None)
             return
@@ -164,7 +176,7 @@ class Supervisor:
             if record.pid is not None:
                 self._note_fast_failure(record, key)
                 if record.status == "failed":
-                    write_record(record, self.root)
+                    self._write(record)
                     return
                 record.restarts += 1
                 record.status = "restarting"
@@ -177,14 +189,14 @@ class Supervisor:
             record.status = "ready"
             record.last_ping_at = now_iso()
             record.last_error = None
-            write_record(record, self.root)
+            self._write(record)
             return
 
         self.ping_failures[key] += 1
         if record.status == "ready" and self.ping_failures[key] >= PING_FAILURES:
             record.status = "hung"
             record.last_error = f"ping failed {PING_FAILURES} consecutive times"
-            write_record(record, self.root)
+            self._write(record)
             terminate(record.pid)
             record.pid = None
             record.restarts += 1
@@ -229,7 +241,7 @@ class Supervisor:
         record.status = "starting" if record.restarts == 0 else "restarting"
         record.started_at = now_iso()
         record.last_error = None
-        write_record(record, self.root)
+        self._write(record)
 
 
 def run_supervisor(root: Path | None = None) -> None:

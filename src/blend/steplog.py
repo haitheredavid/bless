@@ -22,6 +22,15 @@ class Step:
     objects: list[str] = field(default_factory=list)
     params: dict = field(default_factory=dict)  # params changed by this step
     speckle_version: str | None = None
+    prompt: str | None = None  # owning prompt id (bless prompt add/claim)
+
+
+def _line(step: Step) -> str:
+    """One JSON line; the optional prompt key is omitted when unset."""
+    data = asdict(step)
+    if data["prompt"] is None:
+        del data["prompt"]
+    return json.dumps(data) + "\n"
 
 
 class StepLog:
@@ -48,6 +57,7 @@ class StepLog:
         objects: list[str] | None = None,
         params: dict | None = None,
         speckle_version: str | None = None,
+        prompt: str | None = None,
         now: datetime | None = None,
         suffix: str = ".py",
     ) -> Step:
@@ -74,9 +84,10 @@ class StepLog:
             objects=list(objects or []),
             params=dict(params or {}),
             speckle_version=speckle_version,
+            prompt=prompt,
         )
         with self.jsonl.open("a") as f:
-            f.write(json.dumps(asdict(step)) + "\n")
+            f.write(_line(step))
         return step
 
     def set_speckle_version(self, version: str, n: int | None = None) -> Step:
@@ -90,7 +101,7 @@ class StepLog:
         if target is None:
             raise LookupError(f"no step {n}")
         target.speckle_version = version
-        self.jsonl.write_text("".join(json.dumps(asdict(s)) + "\n" for s in entries))
+        self.jsonl.write_text("".join(_line(s) for s in entries))
         return target
 
     def last(self, count: int) -> list[Step]:

@@ -56,14 +56,15 @@ Recommendations in `results.json` are bambi's only channel back: apply or declin
 
 ## Commands
 
-Run `just` to list recipes. Key ones: `just ci`, `just fmt`, `just open <m>`, `just session <m> <slug>`, `just history <m>`, `just check|export|render|views|variants|animate|turntable <m>`, `just print-pack|print-results <m>`, `just wrap <m>`. `just supervisor` runs the foreground multi-session supervisor; `just status` and `just state <m> --json` read durable runtime and interaction state. `bless` also provides `pin`, `lasso`, `camera ls`, `compare`, and `session restart`. The CLIs are `uv run blend --help` and `uv run bless --help`.
+Run `just` to list recipes. Key ones: `just ci`, `just fmt`, `just open <m>`, `just session <m> <slug>`, `just history <m>`, `just check|export|render|views|variants|animate|turntable <m>`, `just print-pack|print-results <m>`, `just wrap <m>`. `just supervisor` runs the foreground multi-session supervisor; `just status` and `just state <m> --json` read durable runtime and interaction state. `bless` also provides `prompt add|claim`, `session attach|attention`, `state <m> --json --graph`, `pin`, `lasso`, `camera ls`, `compare`, and `session restart`. The CLIs are `uv run blend --help` and `uv run bless --help`.
 
 ## Standards
 
 - Z up, model on z=0, real-world size; metres by default, mm for precise work.
 - Control is user-owned and never cleared by builders; Model is procedural. Do not apply modifiers without saying so.
 - Small, idempotent MCP steps; `look` once per step; save before any `just` command.
-- Before acting on every user prompt, record it with `bless prompt add --session <model>/<session> --layer model|scene --text ...`. For a prompt that changes the model and the scene, add it once, then use `bless prompt split` with separate model and scene clauses. User layer corrections use `bless prompt tag` and must not be overwritten.
+- If a user message starts with `[bless p-…]`, the Stage already recorded it: run `bless prompt claim <id> --session <model>/<session> --layer model|scene [--link <word>]` and never `prompt add` it. Pass `--prompt <id>` to `blend step` and `bless snapshot` so results bind to it. Use `bless session attention <model> <session> --set "text"` when you need the user, `--clear` after.
+- Otherwise, before acting on every user prompt, record it with `bless prompt add --session <model>/<session> --layer model|scene --text ...`. For a prompt that changes the model and the scene, add it once, then use `bless prompt split` with separate model and scene clauses. User layer corrections use `bless prompt tag` and must not be overwritten.
 - Find nodes by type, read enum identifiers, never hardcode `Socket_N`.
 - Read the relevant `workflows/*.md` before modeling; update them at `/wrap`.
 

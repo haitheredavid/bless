@@ -47,6 +47,8 @@ class SessionRecord(BaseModel):
     restarts: int
     last_error: str | None
     last_snapshot: str | None
+    agent_pane: str | None = None
+    attention: str | None = None
 
     @property
     def schema(self) -> Literal[1]:  # ty: ignore[invalid-property-type-override]
@@ -104,6 +106,27 @@ def write_record(record: SessionRecord, root: Path | None = None) -> Path:
         Path(name).unlink(missing_ok=True)
         raise
     return path
+
+
+def update_agent_fields(
+    model: str,
+    session: str,
+    root: Path | None = None,
+    *,
+    agent_pane: str | None = None,
+    attention: str | None = None,
+    clear_attention: bool = False,
+) -> SessionRecord:
+    """Set the UI-owned fields (agent pane, attention) on a fresh copy of the record."""
+    record = read_record(model, session, root)
+    if agent_pane is not None:
+        record.agent_pane = agent_pane
+    if clear_attention:
+        record.attention = None
+    elif attention is not None:
+        record.attention = attention
+    write_record(record, root)
+    return record
 
 
 def list_records(root: Path | None = None) -> list[SessionRecord]:

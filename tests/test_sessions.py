@@ -62,6 +62,8 @@ def test_record_round_trip_atomic_and_listing(
         "restarts",
         "last_error",
         "last_snapshot",
+        "agent_pane",
+        "attention",
     }
 
 

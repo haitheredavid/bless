@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from blend import blender, bridge, gallery, grid, printpack, printresults
+from blend import blender, bridge, gallery, graph, grid, printpack, printresults
 from blend import model as models
 from blend import site as sites
 from blend.config import ROOT, get_settings
@@ -265,9 +265,14 @@ def step(
         str | None,
         typer.Option(help="Speckle version id; alone, attaches to the latest step."),
     ] = None,
+    prompt: Annotated[
+        str | None,
+        typer.Option(help="Bind this step to prompt id (marks it applied, versioned)."),
+    ] = None,
 ) -> None:
     """Log an iteration step to models/<m>/log/ (code kept verbatim)."""
-    log = StepLog(_model(ref))
+    item = _model(ref)
+    log = StepLog(item)
     if name is None:
         if not speckle_version:
             console.print("[red]give a step name, or --speckle-version alone[/red]")
@@ -286,6 +291,12 @@ def step(
             console.print(f"[red]--param must be NAME=VALUE, not {kv!r}[/red]")
             raise typer.Exit(1)
         params[key.strip()] = _parse_value(value.strip())
+    if prompt:
+        try:
+            graph.get_prompt(item, prompt)
+        except LookupError as e:
+            console.print(f"[red]{escape(str(e))}[/red]")
+            raise typer.Exit(1)
     st = log.append(
         name,
         intent=intent,
@@ -294,7 +305,11 @@ def step(
         objects=obj,
         params=params,
         speckle_version=speckle_version,
+        prompt=prompt,
     )
+    if prompt:
+        graph.bind_step(item, prompt, st.n)
+        graph.build_graph(item)
     console.print(
         f"[green]step {st.n}[/green] {st.slug}" + (f" -> {st.code}" if st.code else "")
     )

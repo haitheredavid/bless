@@ -9,6 +9,7 @@ Heuristics are intentionally centralized here:
 - links use a leading connective phrase, falling back to ``next``.
 """
 
+import fcntl
 import hashlib
 import itertools
 import json
@@ -17,12 +18,15 @@ import re
 import tempfile
 import warnings
 from collections import Counter, defaultdict
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from blend import interaction
 from blend.model import Model
 from blend.sessions import bless_root, list_records
 
@@ -49,6 +53,7 @@ CONNECTIVE = re.compile(
     re.IGNORECASE,
 )
 PIN_WORDS = re.compile(r"\b(?:version|step)\s+(\d+)\b", re.IGNORECASE)
+TAG = re.compile(r"^\s*\[bless\s+(p-[A-Za-z0-9-]+)\]\s*")
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg"}
 
 
@@ -83,6 +88,9 @@ class PromptRecord(BaseModel):
     split_from: str | None = None
     pinned_model: str | None = None
     selection: dict | None = None
+    version: int | None = Field(default=None, gt=0)
+    parent: str | None = None
+    link: str | None = None
 
 
 class PromptNode(BaseModel):
@@ -101,6 +109,9 @@ class PromptNode(BaseModel):
     camera: str | None = Field(default=None, min_length=1)
     step: int | None = Field(default=None, ge=0)
     snapshot: str | None = Field(default=None, min_length=1)
+    provenance: Literal["heuristic", "agent", "user", "step-log"] | None = None
+    parent: str | None = Field(default=None, min_length=1)
+    snapshot_inferred: bool = False
 
 
 class LinkNode(BaseModel):
@@ -212,6 +223,18 @@ def _atomic_text(path: Path, text: str) -> None:
         raise
 
 
+@contextmanager
+def _prompts_lock(model: Model) -> Iterator[None]:
+    """Serialize prompts.jsonl read-modify-write cycles across CLI processes."""
+    model.log_dir.mkdir(parents=True, exist_ok=True)
+    with (model.log_dir / ".prompts.lock").open("a") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(stream, fcntl.LOCK_UN)
+
+
 def read_steps(model: Model) -> list[dict]:
     path = model.log_dir / "steps.jsonl"
     if not path.exists():
@@ -225,6 +248,7 @@ class TranscriptPrompt(BaseModel):
     ts: str
     text: str
     next_ts: str | None = None
+    tag: str | None = None
 
 
 def transcript_files(home: Path | None = None) -> list[Path]:
@@ -266,7 +290,10 @@ def read_transcript(path: Path) -> list[TranscriptPrompt]:
             continue
         text = _content_text(message.get("content"))
         timestamp = raw.get("timestamp") or message.get("timestamp")
-        if text and timestamp:
+        tag: str | None = None
+        if match := TAG.match(text):
+            tag, text = match.group(1), text[match.end() :].strip()
+        if (text or tag) and timestamp:
             found.append(
                 TranscriptPrompt(
                     path=path,
@@ -275,6 +302,7 @@ def read_transcript(path: Path) -> list[TranscriptPrompt]:
                     ),
                     ts=timestamp,
                     text=text,
+                    tag=tag,
                 )
             )
     found.sort(key=lambda item: parse_time(item.ts))
@@ -334,6 +362,16 @@ def import_transcripts(model: Model, home: Path | None = None) -> list[PromptRec
     """Import new transcript prompts, preserving every existing source record."""
     home_root = (home or Path.home()).resolve()
     steps = read_steps(model)
+    initial = read_prompts(model)
+    known_ids = {record.id for record in initial}
+    # Steps bound to a prompt id (step log or agent record) never fall to windows.
+    explicit_steps: set[int] = set()
+    for step in steps:
+        if step.get("prompt") in known_ids:
+            explicit_steps.add(int(step["n"]))
+    for record in initial:
+        if record.origin == "agent":
+            explicit_steps.update(record.steps)
     transcripts = {path: read_transcript(path) for path in transcript_files(home)}
     model_phrases = {
         model.name.lower(),
@@ -350,6 +388,8 @@ def import_transcripts(model: Model, home: Path | None = None) -> list[PromptRec
     }
     assignments: dict[tuple[Path, str], list[dict]] = defaultdict(list)
     for step in steps:
+        if int(step["n"]) in explicit_steps:
+            continue
         candidates = [
             prompt
             for path, prompts in transcripts.items()
@@ -389,6 +429,8 @@ def import_transcripts(model: Model, home: Path | None = None) -> list[PromptRec
             continue
         anchored = [prompt for prompt in prompts if owned_sessions[prompt.message_id]]
         for prompt in prompts:
+            if prompt.tag:
+                continue  # tagged messages reconcile with their record below
             owned = assignments.get((path, prompt.message_id), [])
             if not _include_prompt(prompt.text, owned):
                 continue
@@ -443,13 +485,27 @@ def import_transcripts(model: Model, home: Path | None = None) -> list[PromptRec
                     )
                 )
 
+    tag_updates: dict[str, tuple[str, str, list[dict]]] = {}
+    for path, prompts in transcripts.items():
+        for prompt in prompts:
+            if prompt.tag is None or prompt.tag not in known_ids:
+                continue
+            owned = assignments.get((path, prompt.message_id), [])
+            transcript_claimed_steps.update(int(step["n"]) for step in owned)
+            tag_updates[prompt.tag] = (
+                prompt.message_id,
+                str(path.relative_to(home_root)),
+                owned,
+            )
+
     deduplicated: dict[str, PromptRecord] = {}
     for record in generated:
         current = deduplicated.get(record.import_key or record.id)
         if current is None or len(record.steps) > len(current.steps):
             deduplicated[record.import_key or record.id] = record
     generated = list(deduplicated.values())
-    claimed_steps = transcript_claimed_steps | {
+    claimed_steps = transcript_claimed_steps | explicit_steps
+    claimed_steps |= {
         number
         for record in generated
         if record.origin == "transcript"
@@ -475,50 +531,83 @@ def import_transcripts(model: Model, home: Path | None = None) -> list[PromptRec
             )
         )
 
-    existing = []
-    for record in read_prompts(model):
-        superseded = record.origin == "step-log" and bool(
-            set(record.steps) & claimed_steps
-        )
-        if not superseded:
-            existing.append(record)
-            continue
-        if record.provenance in {"agent", "user"}:
-            warnings.warn(
-                f"keeping edited step-log prompt {record.id}: transcript now claims "
-                f"step(s) {sorted(set(record.steps) & claimed_steps)}",
-                stacklevel=2,
+    with _prompts_lock(model):
+        existing = []
+        for record in read_prompts(model):
+            superseded = record.origin == "step-log" and bool(
+                set(record.steps) & claimed_steps
             )
-            existing.append(record)
-    by_key = {record.import_key: record for record in existing if record.import_key}
-    merged = list(existing)
-    seen_ids = {record.id for record in existing}
-    for fresh in generated:
-        old = by_key.get(fresh.import_key)
-        if old:
-            old.steps = fresh.steps
-            old.session = fresh.session
-            old.transcript = fresh.transcript
-            old.message_id = fresh.message_id
-            if old.provenance in {"heuristic", "step-log"}:
-                old.layer, old.text, old.status = fresh.layer, fresh.text, fresh.status
-            continue
-        if fresh.id not in seen_ids:
-            merged.append(fresh)
-            seen_ids.add(fresh.id)
-    write_prompts(model, merged)
+            if not superseded:
+                existing.append(record)
+                continue
+            if record.provenance in {"agent", "user"}:
+                warnings.warn(
+                    f"keeping edited step-log prompt {record.id}: transcript now "
+                    f"claims step(s) {sorted(set(record.steps) & claimed_steps)}",
+                    stacklevel=2,
+                )
+                existing.append(record)
+        by_key = {record.import_key: record for record in existing if record.import_key}
+        merged = list(existing)
+        seen_ids = {record.id for record in existing}
+        for fresh in generated:
+            old = by_key.get(fresh.import_key)
+            if old:
+                old.steps = fresh.steps
+                old.session = fresh.session
+                old.transcript = fresh.transcript
+                old.message_id = fresh.message_id
+                if old.provenance in {"heuristic", "step-log"}:
+                    old.layer, old.text = fresh.layer, fresh.text
+                    old.status = fresh.status
+                continue
+            if fresh.id not in seen_ids:
+                merged.append(fresh)
+                seen_ids.add(fresh.id)
+        by_id = {record.id: record for record in merged}
+        for prompt_id, (message_id, transcript, owned) in tag_updates.items():
+            tagged = by_id.get(prompt_id)
+            if tagged is None:
+                continue
+            tagged.message_id = message_id
+            tagged.transcript = transcript
+            if tagged.layer == "model" and not tagged.steps:
+                tagged.steps = [
+                    int(step["n"])
+                    for step in owned
+                    if step.get("session") in (None, tagged.session)
+                ]
+        write_prompts(model, merged)
     return sorted(merged, key=lambda item: (parse_time(item.ts), item.id))
 
 
 def _effective_steps(
     records: list[PromptRecord], steps: list[dict]
 ) -> dict[str, list[dict]]:
-    """Use explicit import ownership, then timestamp/session windows for agent records."""
+    """Explicit prompt ownership first; timestamp windows only for unowned steps.
+
+    A step naming its prompt (``blend step --prompt``) beats any record's step list,
+    which beats the session window used for unbound agent records.
+    """
     by_number = {int(step["n"]): step for step in steps}
+    ids = {record.id for record in records}
+    named = {
+        int(step["n"]): step["prompt"] for step in steps if step.get("prompt") in ids
+    }
     result = {
-        record.id: [by_number[n] for n in record.steps if n in by_number]
+        record.id: [
+            by_number[number]
+            for number in sorted(
+                {
+                    *record.steps,
+                    *(n for n, owner in named.items() if owner == record.id),
+                }
+            )
+            if number in by_number and named.get(number, record.id) == record.id
+        ]
         for record in records
     }
+    claimed = {int(step["n"]) for owned in result.values() for step in owned}
     sessions: dict[str, list[PromptRecord]] = defaultdict(list)
     for record in records:
         sessions[record.session].append(record)
@@ -536,7 +625,8 @@ def _effective_steps(
             result[record.id] = [
                 step
                 for step in steps
-                if step.get("session") == record.session
+                if int(step["n"]) not in claimed
+                and step.get("session") == record.session
                 and parse_time(step["ts"]) >= start
                 and (end is None or parse_time(step["ts"]) < end)
             ]
@@ -636,15 +726,42 @@ def _snapshot_candidates(model: Model, session: str, root: Path) -> list[Path]:
     )
 
 
-def _snapshot_for(record: PromptRecord, model: Model, root: Path) -> str | None:
+def _relative(path: Path, root: Path) -> str | None:
+    resolved = path.resolve()
+    return str(resolved.relative_to(root)) if resolved.is_relative_to(root) else None
+
+
+def _bound_snapshots(model: Model, root: Path) -> dict[str, Path]:
+    """Latest snapshot per prompt id, from sidecars of ``bless snapshot --prompt``."""
+    bound: dict[str, Path] = {}
+    for sidecar in interaction.list_sidecars(root, model.name):
+        prompt_id = sidecar.get("prompt_id")
+        path = Path(sidecar["path"])
+        if isinstance(prompt_id, str) and path.is_file():
+            bound[prompt_id] = path
+    return bound
+
+
+def _snapshot_for(
+    record: PromptRecord, model: Model, root: Path, bound: dict[str, Path]
+) -> tuple[str | None, bool]:
+    """Explicit or prompt-bound image first; nearest mtime is a flagged fallback."""
+    explicit: list[Path] = []
     if record.snapshot:
         supplied = Path(record.snapshot)
-        path = supplied if supplied.is_absolute() else root / supplied
-        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES:
-            return str(path.resolve().relative_to(root.resolve()))
+        explicit.append(supplied if supplied.is_absolute() else root / supplied)
+    if record.id in bound:
+        explicit.append(bound[record.id])
+    for path in explicit:
+        if (
+            path.is_file()
+            and path.suffix.lower() in IMAGE_SUFFIXES
+            and (relative := _relative(path, root))
+        ):
+            return relative, False
     candidates = _snapshot_candidates(model, record.session, root)
     if not candidates:
-        return None
+        return None, False
     prompt_time = parse_time(record.ts).timestamp()
     candidates = [
         path
@@ -652,7 +769,7 @@ def _snapshot_for(record: PromptRecord, model: Model, root: Path) -> str | None:
         if abs(path.stat().st_mtime - prompt_time) <= 24 * 60 * 60
     ]
     if not candidates:
-        return None
+        return None, False
     runtime = root / ".bless" / "snapshots" / model.name / record.session
     nearest = min(
         candidates,
@@ -661,7 +778,40 @@ def _snapshot_for(record: PromptRecord, model: Model, root: Path) -> str | None:
             abs(path.stat().st_mtime - prompt_time),
         ),
     )
-    return str(nearest.resolve().relative_to(root.resolve()))
+    relative = _relative(nearest, root)
+    return relative, relative is not None
+
+
+def _assign_versions(
+    model: Model, records: list[PromptRecord], owned: dict[str, list[dict]]
+) -> None:
+    """Persist a version once, when a model prompt first counts as applied.
+
+    Existing data backfills in (ts, id) order, which reproduces the former ordinal
+    numbering; later prompts always take the next number, so nothing is renumbered.
+    """
+    pending: list[PromptRecord] = []
+    for record in records:
+        if record.layer != "model" or record.version is not None:
+            continue
+        derived = record.status == "queued" and bool(owned[record.id])
+        if record.status == "applied" or derived:
+            pending.append(record)
+    if not pending:
+        return
+    with _prompts_lock(model):
+        stored = read_prompts(model)
+        by_id = {record.id: record for record in stored}
+        following = _next_version(stored)
+        for record in pending:
+            source = by_id.get(record.id)
+            if source is None:
+                continue
+            if source.version is None:
+                source.version, source.status = following, "applied"
+                following += 1
+            record.version, record.status = source.version, source.status
+        write_prompts(model, stored)
 
 
 def build_graph(model: Model, root: Path | None = None) -> Graph:
@@ -671,6 +821,7 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
     )
     steps = read_steps(model)
     owned = _effective_steps(records, steps)
+    _assign_versions(model, records, owned)
     scores = {
         record.id: _score(model, owned[record.id])
         for record in records
@@ -678,16 +829,21 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
     }
     maximum = max(scores.values(), default=0.0)
     cameras = load_cameras(model, root)
+    bound = _bound_snapshots(model, root)
+    record_by_id = {record.id: record for record in records}
 
-    versions: dict[str, int] = {}
-    ordinal = 0
-    for record in records:
-        if record.layer == "model" and record.status == "applied":
-            ordinal += 1
-            versions[record.id] = ordinal
-    current_id = next(
-        (record.id for record in reversed(records) if record.id in versions), None
+    latest = max(
+        (
+            record
+            for record in records
+            if record.layer == "model"
+            and record.status == "applied"
+            and record.version is not None
+        ),
+        key=lambda record: record.version or 0,
+        default=None,
     )
+    current_id = latest.id if latest else None
 
     prompts: list[PromptNode] = []
     for record in records:
@@ -700,7 +856,7 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
             ),
             None,
         )
-        snapshot = _snapshot_for(record, model, root)
+        snapshot, inferred = _snapshot_for(record, model, root, bound)
         camera = record.camera if record.camera in cameras else None
         prompts.append(
             PromptNode(
@@ -708,7 +864,7 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
                 layer=record.layer,
                 text=record.text,
                 session=record.session,
-                version=versions.get(record.id),
+                version=record.version if record.layer == "model" else None,
                 speckle_version=speckle,
                 size=(
                     round(scores.get(record.id, 0.0) / maximum, 4)
@@ -724,6 +880,9 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
                 camera=camera,
                 step=min((int(step["n"]) for step in node_steps), default=None),
                 snapshot=snapshot,
+                provenance=record.provenance,
+                parent=record.parent,
+                snapshot_inferred=inferred,
             )
         )
 
@@ -733,46 +892,13 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
     links = [
         LinkNode(
             id=f"link-{later.id}",
-            text=_connective(later.text),
+            text=record_by_id[later.id].link or _connective(later.text),
             **{"from": earlier.id},
             to=later.id,
         )
         for session_nodes in by_session.values()
         for earlier, later in itertools.pairwise(session_nodes)
     ]
-
-    references = []
-    prior_models: list[PromptNode] = []
-    record_by_id = {record.id: record for record in records}
-    for node in prompts:
-        if node.layer == "model" and node.status == "applied":
-            prior_models.append(node)
-            continue
-        if node.layer != "scene" or not prior_models:
-            continue
-        source = record_by_id[node.id]
-        pinned = source.pinned_model
-        if not pinned and (match := PIN_WORDS.search(node.text)):
-            number = int(match.group(1))
-            pinned_node = next(
-                (
-                    candidate
-                    for candidate in prior_models
-                    if candidate.version == number or candidate.step == number
-                ),
-                None,
-            )
-            pinned = pinned_node.id if pinned_node else None
-        target = pinned or prior_models[-1].id
-        references.append(
-            Reference(
-                id=f"ref-{node.id}",
-                scene=node.id,
-                model=target,
-                mode="pinned" if pinned else "follows",
-                text="pinned version" if pinned else "latest model",
-            )
-        )
 
     sessions = []
     for session, session_nodes in sorted(by_session.items()):
@@ -792,6 +918,65 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
                 parent_node=parent,
             )
         )
+
+    index_of = {node.id: index for index, node in enumerate(prompts)}
+    parents = {item.id: item.parent_node for item in sessions}
+
+    def lineage(session: str) -> dict[str, int]:
+        """Sessions a scene may reference, each with its last visible node index."""
+        limits = {session: len(prompts)}
+        cursor, cap = session, len(prompts)
+        while (parent_id := parents.get(cursor)) and parent_id in index_of:
+            owner = prompts[index_of[parent_id]].session
+            cap = min(cap, index_of[parent_id])
+            if owner in limits:
+                break
+            limits[owner] = cap
+            cursor = owner
+        return limits
+
+    references = []
+    prior_models: list[PromptNode] = []
+    lineages: dict[str, dict[str, int]] = {}
+    for node in prompts:
+        if node.layer == "model" and node.status == "applied":
+            prior_models.append(node)
+            continue
+        if node.layer != "scene":
+            continue
+        limits = lineages.setdefault(node.session, lineage(node.session))
+        visible = [
+            candidate
+            for candidate in prior_models
+            if candidate.session in limits
+            and index_of[candidate.id] <= limits[candidate.session]
+        ]
+        source = record_by_id[node.id]
+        if not visible and not source.pinned_model:
+            continue
+        pinned = source.pinned_model
+        if not pinned and (match := PIN_WORDS.search(node.text)):
+            number = int(match.group(1))
+            pinned_node = next(
+                (
+                    candidate
+                    for candidate in visible
+                    if candidate.version == number or candidate.step == number
+                ),
+                None,
+            )
+            pinned = pinned_node.id if pinned_node else None
+        target = pinned or visible[-1].id
+        references.append(
+            Reference(
+                id=f"ref-{node.id}",
+                scene=node.id,
+                model=target,
+                mode="pinned" if pinned else "follows",
+                text="pinned version" if pinned else "latest model",
+            )
+        )
+
     graph = Graph(
         model=model.name,
         sessions=sessions,
@@ -804,6 +989,26 @@ def build_graph(model: Model, root: Path | None = None) -> Graph:
     return graph
 
 
+def _next_version(records: list[PromptRecord]) -> int:
+    return max((record.version or 0 for record in records), default=0) + 1
+
+
+def get_prompt(model: Model, prompt_id: str) -> PromptRecord:
+    return _find(read_prompts(model), prompt_id)
+
+
+def last_prompt(model: Model, session: str) -> dict[str, str] | None:
+    """Latest prompt of a session as ``{"id", "text", "status"}``."""
+    latest = max(
+        (record for record in read_prompts(model) if record.session == session),
+        key=lambda item: (parse_time(item.ts), item.id),
+        default=None,
+    )
+    if latest is None:
+        return None
+    return {"id": latest.id, "text": latest.text, "status": latest.status}
+
+
 def add_prompt(
     model: Model,
     session: str,
@@ -811,10 +1016,11 @@ def add_prompt(
     text: str,
     now: str | None = None,
     selection: dict | None = None,
+    camera: str | None = None,
+    parent: str | None = None,
 ) -> PromptRecord:
     if not text.strip():
         raise ValueError("prompt text cannot be empty")
-    records = read_prompts(model)
     stamp = now or iso_now()
     seed = f"{model.name}:{session}:{stamp}:{text}:{layer}"
     prompt = PromptRecord(
@@ -827,24 +1033,83 @@ def add_prompt(
         provenance="agent",
         origin="agent",
         selection=selection,
+        camera=camera or None,
+        parent=parent or None,
     )
-    if any(record.id == prompt.id for record in records):
-        raise ValueError(f"prompt id collision: {prompt.id}")
-    records.append(prompt)
-    write_prompts(model, records)
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        if prompt.parent:
+            _find(records, prompt.parent)
+        if any(record.id == prompt.id for record in records):
+            raise ValueError(f"prompt id collision: {prompt.id}")
+        records.append(prompt)
+        write_prompts(model, records)
+    return prompt
+
+
+def claim_prompt(
+    model: Model,
+    prompt_id: str,
+    session: str,
+    layer: Literal["model", "scene"],
+    link: str | None = None,
+) -> PromptRecord:
+    """Adopt a UI-recorded prompt: idempotent; keeps selection, parent and camera."""
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        prompt = _find(records, prompt_id)
+        if prompt.session != session:
+            raise ValueError(
+                f"prompt {prompt_id} belongs to session {prompt.session}, not {session}"
+            )
+        if prompt.provenance != "user":  # user layer corrections always win
+            if layer != prompt.layer:
+                prompt.layer = layer
+                if layer == "scene":
+                    prompt.steps, prompt.version = [], None
+            prompt.provenance = "agent"
+        if link and link.strip():
+            prompt.link = link.strip()
+        write_prompts(model, records)
+    return prompt
+
+
+def bind_step(model: Model, prompt_id: str, step_number: int) -> PromptRecord:
+    """Bind a logged step to its prompt: applied, with a version assigned once."""
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        prompt = _find(records, prompt_id)
+        if step_number not in prompt.steps:
+            prompt.steps = sorted([*prompt.steps, step_number])
+        prompt.status = "applied"
+        if prompt.layer == "model" and prompt.version is None:
+            prompt.version = _next_version(records)
+        write_prompts(model, records)
+    return prompt
+
+
+def bind_snapshot(model: Model, prompt_id: str) -> PromptRecord:
+    """A snapshot bound to a scene prompt is its result; model prompts need steps."""
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        prompt = _find(records, prompt_id)
+        if prompt.layer == "scene" and prompt.status in {"queued", "preview"}:
+            prompt.status = "applied"
+            write_prompts(model, records)
     return prompt
 
 
 def tag_prompt(
     model: Model, prompt_id: str, layer: Literal["model", "scene"]
 ) -> PromptRecord:
-    records = read_prompts(model)
-    prompt = _find(records, prompt_id)
-    prompt.layer = layer
-    prompt.provenance = "user"
-    if layer == "scene":
-        prompt.steps = []
-    write_prompts(model, records)
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        prompt = _find(records, prompt_id)
+        prompt.layer = layer
+        prompt.provenance = "user"
+        if layer == "scene":
+            prompt.steps, prompt.version = [], None
+        write_prompts(model, records)
     return prompt
 
 
@@ -853,55 +1118,60 @@ def split_prompt(
 ) -> tuple[PromptRecord, PromptRecord]:
     if not model_text.strip() or not scene_text.strip():
         raise ValueError("both split texts are required")
-    records = read_prompts(model)
-    original = _find(records, prompt_id)
-    original.layer = "model"
-    original.text = model_text.strip()
-    original.provenance = "user"
-    original.split_from = prompt_id
-    scene_id = f"{prompt_id}-scene"
-    if any(record.id == scene_id for record in records):
-        scene = _find(records, scene_id)
-        scene.text = scene_text.strip()
-        scene.layer = "scene"
-        scene.provenance = "user"
-    else:
-        scene = PromptRecord(
-            id=scene_id,
-            ts=original.ts,
-            session=original.session,
-            layer="scene",
-            text=scene_text.strip(),
-            status="applied" if original.status == "applied" else original.status,
-            provenance="user",
-            origin=original.origin,
-            split_from=prompt_id,
-        )
-        records.append(scene)
-    write_prompts(model, records)
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        original = _find(records, prompt_id)
+        original.layer = "model"
+        original.text = model_text.strip()
+        original.provenance = "user"
+        original.split_from = prompt_id
+        scene_id = f"{prompt_id}-scene"
+        if any(record.id == scene_id for record in records):
+            scene = _find(records, scene_id)
+            scene.text = scene_text.strip()
+            scene.layer = "scene"
+            scene.provenance = "user"
+        else:
+            scene = PromptRecord(
+                id=scene_id,
+                ts=original.ts,
+                session=original.session,
+                layer="scene",
+                text=scene_text.strip(),
+                status=original.status,
+                provenance="user",
+                origin=original.origin,
+                split_from=prompt_id,
+                camera=original.camera,
+                parent=original.parent,
+            )
+            records.append(scene)
+        write_prompts(model, records)
     return original, scene
 
 
 def edit_prompt(model: Model, prompt_id: str, text: str) -> PromptRecord:
     if not text.strip():
         raise ValueError("prompt text cannot be empty")
-    records = read_prompts(model)
-    prompt = _find(records, prompt_id)
-    prompt.text = text.strip()
-    prompt.provenance = "user"
-    write_prompts(model, records)
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        prompt = _find(records, prompt_id)
+        prompt.text = text.strip()
+        prompt.provenance = "user"
+        write_prompts(model, records)
     return prompt
 
 
 def pin_prompt(model: Model, scene_id: str, model_id: str) -> PromptRecord:
-    records = read_prompts(model)
-    scene = _find(records, scene_id)
-    target = _find(records, model_id)
-    if scene.layer != "scene" or target.layer != "model":
-        raise ValueError("pin requires a scene prompt and a model prompt")
-    scene.pinned_model = target.id
-    scene.provenance = "user"
-    write_prompts(model, records)
+    with _prompts_lock(model):
+        records = read_prompts(model)
+        scene = _find(records, scene_id)
+        target = _find(records, model_id)
+        if scene.layer != "scene" or target.layer != "model":
+            raise ValueError("pin requires a scene prompt and a model prompt")
+        scene.pinned_model = target.id
+        scene.provenance = "user"
+        write_prompts(model, records)
     return scene
 
 

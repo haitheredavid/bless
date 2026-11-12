@@ -72,6 +72,15 @@ def current_version(root: Path, model: str) -> int | None:
     return max(versions, default=None)
 
 
+def session_camera(root: Path, model: str, session: str) -> str | None:
+    """Thread the session's latest snapshot was taken from, while it is still saved."""
+    latest = latest_sidecar(root, model, session)
+    thread = latest.get("camera") if latest else None
+    if thread and (root / ".bless" / "cameras" / model / f"{thread}.json").is_file():
+        return thread
+    return None
+
+
 def _matmul(a: list[list[float]], b: list[list[float]]) -> list[list[float]]:
     return [
         [sum(a[i][k] * b[k][j] for k in range(4)) for j in range(4)] for i in range(4)
